@@ -1,6 +1,7 @@
 const Order = require("../backend/models/Order");
 const { setSession, getSession, clearSession } = require("../backend/models/sessions");
 const { createGopayPayment } = require("../backend/models/midtrans");
+const { getQrisScreenshot } = require("../backend/utils/snapQrExtractor");
 
 const cooldownMap = new Map();
 const hargaNormal = 1000;
@@ -66,8 +67,10 @@ async function handleMessage(sock, msg) {
     const total = order.jumlah * (order.jumlah >= 100 ? hargaDiskon : hargaNormal) + kodeUnik;
 
     try {
+      // Ambil screenshot QR dari Snap
+      const qrBuffer = await getQrisScreenshot(gopay.snapUrl);
+      // Simpan ke database
       const gopay = await createGopayPayment(order.orderId, total);
-
       order.status = "menunggu_pembayaran";
       order.totalHarga = total;
       order.snapUrl = gopay.snapUrl;
@@ -78,22 +81,23 @@ async function handleMessage(sock, msg) {
       clearSession(sender);
 
       // Kirim QRIS gambar + Snap link
-      await sock.sendMessage(sender, {
-        image: { url: gopay.qrisImageUrl },
-        caption: `✅ *Password diterima!*
+      
+await sock.sendMessage(sender, {
+  image: qrBuffer,
+  caption: `✅ *Password diterima!*
+
 🆔 Order ID: *${order.orderId}*
 💳 Total bayar: *Rp${total.toLocaleString()}*
-🧭 Batas waktu: 15 Menit
 
-📱 Klik link berikut untuk bayar lewat GoPay:
-${gopay.snapUrl}
+📸 Scan QRIS di atas untuk bayar via GoPay / DANA / OVO.
 
-📸 Atau scan QR di atas pakai aplikasi e-wallet (GoPay, OVO, DANA, dll).
+🔗 Atau klik link ini:
+${order.snapUrl}
 
-Setelah bayar, hubungi admin: wa.me/6289526223009
+📌 Setelah bayar, hubungi admin: wa.me/6289526223009
 
-(Ketik 0 untuk kembali ke menu utama)`
-      });
+(Ketik 0 untuk kembali ke menu)`
+});
 
 
     } catch (error) {
