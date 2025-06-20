@@ -74,15 +74,16 @@ async function handleMessage(sock, msg) {
       try {
         const qris = await createGopayPayment(userOrder.orderId, total);
 
-        userOrder.status = "menunggu_pembayaran";
-        userOrder.totalHarga = total;
-        userOrder.qrUrl = qris.qrUrl;
-        userOrder.deeplinkUrl = qris.deeplinkUrl;
-        await userOrder.save();
+        order.status = "menunggu_pembayaran";
+        order.totalHarga = total;
+        order.qrUrl = qris.qrUrl;
+        order.deeplinkUrl = qris.deeplinkUrl;
+        await order.save();
 
         await sock.sendMessage(sender, {
           image: { url: qris.qrUrl },
           caption: `✅ Password diterima.
+
 💳 Total bayar: *Rp${total.toLocaleString()}*
 
 📱 Klik untuk bayar langsung pakai GoPay:
