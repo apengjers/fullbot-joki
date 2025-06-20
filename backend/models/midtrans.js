@@ -1,9 +1,8 @@
 // backend/midtrans.js
-
 const midtransClient = require("midtrans-client");
 require("dotenv").config();
 
-const core = new midtransClient.CoreApi({
+const snap = new midtransClient.Snap({
   isProduction: true, // Ganti false jika masih sandbox
   serverKey: process.env.MIDTRANS_SERVER_KEY,
   clientKey: process.env.MIDTRANS_CLIENT_KEY,
@@ -11,33 +10,25 @@ const core = new midtransClient.CoreApi({
 
 async function createGopayPayment(orderId, amount) {
   const parameter = {
-    payment_type: "gopay",
     transaction_details: {
       order_id: orderId,
       gross_amount: amount,
     },
-    gopay: {
-      enable_callback: false,
-      callback_url: "",
-    },
+    enabled_payments: ["gopay"],
   };
 
   try {
-    const response = await core.charge(parameter);
-    console.log("✅ GoPay Response dari Midtrans:");
-    console.log(JSON.stringify(response, null, 2));
-
-    const deeplink = response.actions.find((a) => a.name === "deeplink-redirect")?.url;
-
-    if (!deeplink) throw new Error("Deeplink URL tidak ditemukan dalam response Midtrans.");
+    const transaction = await snap.createTransaction(parameter);
+    console.log("✅ Snap GoPay Response:");
+    console.log(JSON.stringify(transaction, null, 2));
 
     return {
-      deeplinkUrl: deeplink,
+      snapUrl: transaction.redirect_url,
       total: amount,
     };
 
   } catch (error) {
-    console.error("❌ Gagal membuat GoPay payment di Midtrans:");
+    console.error("❌ Gagal membuat Snap GoPay transaction:");
     console.error(error.response?.data || error.message);
     throw error;
   }

@@ -64,7 +64,9 @@ async function handleMessage(sock, msg) {
   const order = await Order.findOne({ orderId: session.orderId });
   if (!order) {
     clearSession(sender);
-    return await sock.sendMessage(sender, { text: "❌ Order tidak ditemukan. Silakan mulai ulang dengan ketik 1." });
+    return await sock.sendMessage(sender, {
+      text: "❌ Order tidak ditemukan. Silakan mulai ulang dengan ketik 1.",
+    });
   }
 
   order.password = text;
@@ -72,38 +74,38 @@ async function handleMessage(sock, msg) {
   const total = order.jumlah * (order.jumlah >= 100 ? hargaDiskon : hargaNormal) + kodeUnik;
 
   try {
-    const qris = await createGopayPayment(order.orderId, total);
+    const gopay = await createGopayPayment(order.orderId, total);
 
     order.status = "menunggu_pembayaran";
     order.totalHarga = total;
-    order.qrUrl = qris.qrUrl;
-    order.deeplinkUrl = qris.deeplinkUrl;
     order.kodeUnik = kodeUnik;
+    order.snapUrl = gopay.snapUrl;
     await order.save();
 
     clearSession(sender);
 
     return await sock.sendMessage(sender, {
-    text: `✅ Password diterima!
+      text: `✅ *Password diterima!*
 
 🆔 Order ID: *${order.orderId}*
 💳 Total bayar: *Rp${total.toLocaleString()}*
 
-📱 Klik link berikut untuk bayar langsung lewat GoPay:
-${gopay.deeplinkUrl}
+📱 Klik link berikut untuk bayar lewat GoPay:
+${gopay.snapUrl}
 
 📌 Setelah bayar, hubungi admin: wa.me/6289526223009
 
 (Ketik 0 untuk kembali ke menu)`
-  });
+    });
 
   } catch (error) {
-    console.error("❌ Error saat membuat pembayaran GoPay:", error);
+    console.error("❌ Error saat membuat pembayaran Snap:", error);
     return await sock.sendMessage(sender, {
       text: `❌ Terjadi kesalahan saat membuat pembayaran.\nSilakan coba lagi.\n\nError: ${error.message || error}`
     });
   }
 }
+
 
 
 
