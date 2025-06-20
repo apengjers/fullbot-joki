@@ -1,7 +1,7 @@
 const Order = require("../backend/models/Order");
 const { setSession, getSession, clearSession } = require("../backend/models/sessions");
 const axios = require("axios"); // TAMBAHKAN
-const { createGopayQR } = require("../backend/models/midtrans"); // GANTI dari createBcaVA
+const { createGopayPayment } = require("../backend/models/midtrans");
 
 // ⏱️ Map untuk anti-spam
 const cooldownMap = new Map();
@@ -72,30 +72,26 @@ async function handleMessage(sock, msg) {
     const total = order.jumlah * (order.jumlah >= 100 ? hargaDiskon : hargaNormal) + kodeUnik;
 
       try {
-        const { qr_url, deeplink_url, qr_image, total: totalFinal } = await createGopayQR(order.orderId, total);
+        const qris = await createGopayPayment(userOrder.orderId, total);
 
-        order.status = "menunggu_pembayaran";
-        order.totalHarga = totalFinal;
-        order.kodeUnik = kodeUnik;
-        order.qr_url = qr_url;
-        order.metode = "gopay";
-        await order.save();
+        userOrder.status = "menunggu_pembayaran";
+        userOrder.totalHarga = total;
+        userOrder.qrUrl = qris.qrUrl;
+        userOrder.deeplinkUrl = qris.deeplinkUrl;
+        await userOrder.save();
 
-        clearSession(sender);
-
-        // Kirim gambar QR GoPay
         await sock.sendMessage(sender, {
-          image: qr_image,
-          caption:
-            `✅ *Password diterima!*\n\n` +
-            `🆔 Order ID: *${order.orderId}*\n` +
-            `💰 Total bayar: *Rp${totalFinal.toLocaleString()}*\n` +
-            `📱 Metode: *GoPay (QRIS)*\n\n` +
-            `🔗 Deeplink: ${deeplink_url || "Tidak tersedia"}\n\n` +
-            `📌 Scan QR di atas untuk membayar dengan GoPay atau eWallet lainnya.\n\n` +
-            `❗ Setelah bayar, hubungi admin:\nwa.me/6289526223009\n\n(Ketik 0 untuk kembali ke menu utama)`
-      });
+          image: { url: qris.qrUrl },
+          caption: `✅ Password diterima.
+💳 Total bayar: *Rp${total.toLocaleString()}*
 
+📱 Klik untuk bayar langsung pakai GoPay:
+${qris.deeplinkUrl}
+
+Atau scan QRIS di atas lewat aplikasi e-wallet.
+
+Setelah bayar, hubungi admin untuk proses joki.`,
+});
 
     } catch (error) {
       console.error("❌ Error saat membuat pembayaran GoPay:", error);
