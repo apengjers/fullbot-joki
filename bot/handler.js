@@ -1,6 +1,6 @@
 const Order = require("../backend/models/Order");
 const { setSession, getSession, clearSession } = require("../backend/models/sessions");
-const { createBcaVA } = require("../backend/models/midtrans");
+const { createGopayQR } = require("../backend/models/midtrans");
 
 // ⏱️ Map untuk anti-spam
 const cooldownMap = new Map();
