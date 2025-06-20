@@ -33,6 +33,7 @@ function generateOrderId() {
   return "ORD" + Date.now();
 }
 
+// Message Handler
 async function handleMessage(sock, msg) {
   const sender = msg.key.remoteJid;
   const text = msg.message?.conversation?.trim().toLowerCase() ||
@@ -104,8 +105,10 @@ _Ketik 0 untuk batal dan kembali ke menu_`,
   // 🔁 Menu kembali
   if (text === "0") {
     clearSession(sender);
-    return await sock.sendMessage(sender, { text: menuUtama });
+    await sock.sendMessage(sender, { text: menuUtama });
+    return; // ⬅️ Tambahkan return di sini
   }
+
 
   const session = getSession(sender);
 
