@@ -1,0 +1,30 @@
+{
+  "name": "whatsapp-joki-bot",
+  "version": "1.0.0",
+  "description": "Bot WhatsApp Joki CDID dengan Midtrans dan MongoDB",
+  "main": "bot/index.js",
+  "scripts": {
+    "start": "node bot/index.js"
+  },
+  "keywords": [
+    "whatsapp",
+    "midtrans",
+    "joki",
+    "bot"
+  ],
+  "author": "apengjers",
+  "license": "ISC",
+  "type": "commonjs",
+  "dependencies": {
+    "@whiskeysockets/baileys": "^6.7.18",
+    "axios": "^1.10.0",
+    "cors": "^2.8.5",
+    "discord": "^0.8.2",
+    "discord.js": "^14.20.0",
+    "dotenv": "^16.5.0",
+    "express": "^5.1.0",
+    "midtrans-client": "^1.4.3",
+    "mongoose": "^8.15.2",
+    "qrcode-terminal": "^0.12.0"
+  }
+}
