@@ -70,6 +70,13 @@ async function handleMessage(sock, msg) {
     });
   }
 
+  // 🔁 Menu kembali
+  if (text === "0") {
+    clearSession(sender);
+    await sock.sendMessage(sender, { text: menuUtama });
+    return; // ⬅️ Tambahkan return di sini
+  }
+
   // 🔢 JUMLAH CDID
   const jumlah = parseInt(text.replace("m", ""));
   if (!isNaN(jumlah)) {
@@ -101,14 +108,6 @@ Sekarang kirimkan *username akun CDID*-mu.
 _Ketik 0 untuk batal dan kembali ke menu_`,
     });
   }
-
-  // 🔁 Menu kembali
-  if (text === "0") {
-    clearSession(sender);
-    await sock.sendMessage(sender, { text: menuUtama });
-    return; // ⬅️ Tambahkan return di sini
-  }
-
 
   const session = getSession(sender);
 
