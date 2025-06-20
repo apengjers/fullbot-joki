@@ -1,11 +1,9 @@
-// backend/midtrans.js
 const midtransClient = require("midtrans-client");
 require("dotenv").config();
 
 const snap = new midtransClient.Snap({
-  isProduction: true, // Ganti false jika masih sandbox
+  isProduction: true, // atau false kalau sandbox
   serverKey: process.env.MIDTRANS_SERVER_KEY,
-  clientKey: process.env.MIDTRANS_CLIENT_KEY,
 });
 
 async function createGopayPayment(orderId, amount) {
@@ -15,21 +13,28 @@ async function createGopayPayment(orderId, amount) {
       gross_amount: amount,
     },
     enabled_payments: ["gopay"],
+    gopay: {
+      enable_callback: false,
+      callback_url: "",
+    },
   };
 
   try {
     const transaction = await snap.createTransaction(parameter);
-    console.log("✅ Snap GoPay Response:");
-    console.log(JSON.stringify(transaction, null, 2));
+    const snapToken = transaction.token;
+    const snapUrl = transaction.redirect_url;
+    const transactionId = snapUrl.split("/").pop().split("#")[0]; // ambil UUID
+
+    const qrisImageUrl = `https://app.midtrans.com/snap/v2/qris/${transactionId}.png`;
 
     return {
-      snapUrl: transaction.redirect_url,
+      snapUrl,
+      qrisImageUrl,
+      transactionId,
       total: amount,
     };
-
   } catch (error) {
-    console.error("❌ Gagal membuat Snap GoPay transaction:");
-    console.error(error.response?.data || error.message);
+    console.error("❌ Snap error:", error.response?.data || error.message);
     throw error;
   }
 }
