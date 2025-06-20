@@ -67,46 +67,37 @@ async function handleMessage(sock, msg) {
     const total = order.jumlah * (order.jumlah >= 100 ? hargaDiskon : hargaNormal) + kodeUnik;
 
     try {
-      // Ambil screenshot QR dari Snap
-      const qrBuffer = await getQrisScreenshot(gopay.snapUrl);
-      // Simpan ke database
-      const gopay = await createGopayPayment(order.orderId, total);
+      const result = await createGopayPayment(order.orderId, total); // ganti nama jadi 'result' biar jelas
+
       order.status = "menunggu_pembayaran";
       order.totalHarga = total;
-      order.snapUrl = gopay.snapUrl;
-      order.qrUrl = gopay.qrisImageUrl;
       order.kodeUnik = kodeUnik;
+      order.snapUrl = result.snapUrl;
       await order.save();
 
       clearSession(sender);
 
-      // Kirim QRIS gambar + Snap link
-      
-await sock.sendMessage(sender, {
-  image: qrBuffer,
-  caption: `✅ *Password diterima!*
+      await sock.sendMessage(sender, {
+        text: `✅ *Password diterima!*
 
-🆔 Order ID: *${order.orderId}*
-💳 Total bayar: *Rp${total.toLocaleString()}*
+    🆔 Order ID: *${order.orderId}*
+    💳 Total bayar: *Rp${total.toLocaleString()}*
 
-📸 Scan QRIS di atas untuk bayar via GoPay / DANA / OVO.
+    📱 Klik link berikut untuk bayar lewat GoPay:
+    ${result.snapUrl}
 
-🔗 Atau klik link ini:
-${order.snapUrl}
+    📌 Setelah bayar, hubungi admin: wa.me/6289526223009
 
-📌 Setelah bayar, hubungi admin: wa.me/6289526223009
-
-(Ketik 0 untuk kembali ke menu)`
-});
-
+    (Ketik 0 untuk kembali ke menu)`
+      });
 
     } catch (error) {
-      console.error("❌ Snap error:", error);
+      console.error("❌ Error saat membuat pembayaran Snap:", error);
       return await sock.sendMessage(sender, {
-        text: `❌ Gagal membuat pembayaran. Silakan coba lagi.\nError: ${error.message || error}`
+        text: `❌ Terjadi kesalahan saat membuat pembayaran.\nSilakan coba lagi.\n\nError: ${error.message || error}`
       });
     }
-  }
+}
 
   // 👤 USERNAME
   if (session?.state === "awaiting_username") {
