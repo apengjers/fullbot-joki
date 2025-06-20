@@ -1,6 +1,8 @@
 const midtransClient = require("midtrans-client");
 require("dotenv").config();
 
+const axios = require("axios");
+
 const core = new midtransClient.CoreApi({
   isProduction: false,
   serverKey: process.env.MIDTRANS_SERVER_KEY,
@@ -11,7 +13,7 @@ const core = new midtransClient.CoreApi({
  * Buat transaksi GoPay (QRIS)
  * @param {string} orderId
  * @param {number} amount
- * @returns {{ qr_url: string, total: number }}
+ * @returns {{ qr_url: string, deeplink_url: string|null, qr_image: Buffer, total: number }}
  */
 async function createGopayQR(orderId, amount) {
   const parameter = {
@@ -22,7 +24,7 @@ async function createGopayQR(orderId, amount) {
     },
     gopay: {
       enable_callback: false,
-      callback_url: "", // kosongkan atau isi dengan URL callback-mu
+      callback_url: "",
     },
   };
 
@@ -35,10 +37,20 @@ async function createGopayQR(orderId, amount) {
       (act) => act.name === "generate-qr-code"
     )?.url;
 
+    const deeplinkUrl = response.actions?.find(
+      (act) => act.name === "deeplink-redirect"
+    )?.url;
+
     if (!qrUrl) throw new Error("QRIS URL tidak ditemukan dari GoPay.");
+
+    // Download gambar QR sebagai buffer
+    const qrImageResponse = await axios.get(qrUrl, { responseType: "arraybuffer" });
+    const qrImageBuffer = Buffer.from(qrImageResponse.data, "binary");
 
     return {
       qr_url: qrUrl,
+      deeplink_url: deeplinkUrl || null,
+      qr_image: qrImageBuffer,
       total: amount,
     };
   } catch (error) {

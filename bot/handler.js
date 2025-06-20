@@ -1,6 +1,7 @@
 const Order = require("../backend/models/Order");
 const { setSession, getSession, clearSession } = require("../backend/models/sessions");
-const { createGopayQR } = require("../backend/models/midtrans");
+const axios = require("axios"); // TAMBAHKAN
+const { createGopayQR } = require("../backend/models/midtrans"); // GANTI dari createBcaVA
 
 // ⏱️ Map untuk anti-spam
 const cooldownMap = new Map();
@@ -70,32 +71,31 @@ async function handleMessage(sock, msg) {
     const kodeUnik = Math.floor(Math.random() * 100) + 1;
     const total = order.jumlah * (order.jumlah >= 100 ? hargaDiskon : hargaNormal) + kodeUnik;
 
-    try {
-      const gopay = await createGopayQR(order.orderId, total);
+      try {
+        const { qr_url, deeplink_url, qr_image, total: totalFinal } = await createGopayQR(order.orderId, total);
 
-      order.status = "menunggu_pembayaran";
-      order.totalHarga = total;
-      order.kodeUnik = kodeUnik;
-      order.qr_url = gopay.qr_url;
-      order.metode = "gopay";
-      await order.save();
+        order.status = "menunggu_pembayaran";
+        order.totalHarga = totalFinal;
+        order.kodeUnik = kodeUnik;
+        order.qr_url = qr_url;
+        order.metode = "gopay";
+        await order.save();
 
-      clearSession(sender);
+        clearSession(sender);
 
-      return await sock.sendMessage(sender, {
-        text: `✅ *Password diterima!*
-
-  🆔 Order ID: *${order.orderId}*
-  💰 Total bayar: *Rp${total.toLocaleString()}*
-  📱 Metode: *GoPay (QRIS)*
-
-  Silakan *scan QR berikut* untuk membayar:
-  ${gopay.qr_url}
-
-  Setelah bayar, hubungi admin: wa.me/6289526223009
-
-  (Ketik 0 untuk kembali ke menu utama)`
+        // Kirim gambar QR GoPay
+        await sock.sendMessage(sender, {
+          image: qr_image,
+          caption:
+            `✅ *Password diterima!*\n\n` +
+            `🆔 Order ID: *${order.orderId}*\n` +
+            `💰 Total bayar: *Rp${totalFinal.toLocaleString()}*\n` +
+            `📱 Metode: *GoPay (QRIS)*\n\n` +
+            `🔗 Deeplink: ${deeplink_url || "Tidak tersedia"}\n\n` +
+            `📌 Scan QR di atas untuk membayar dengan GoPay atau eWallet lainnya.\n\n` +
+            `❗ Setelah bayar, hubungi admin:\nwa.me/6289526223009\n\n(Ketik 0 untuk kembali ke menu utama)`
       });
+
 
     } catch (error) {
       console.error("❌ Error saat membuat pembayaran GoPay:", error);
