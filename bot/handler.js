@@ -66,7 +66,7 @@ async function handleMessage(sock, msg) {
 
   if (text === "3" || text.includes("admin")) {
     return await sock.sendMessage(sender, {
-      text: "📞 Hubungi admin via WhatsApp:\nhttps://wa.me/6289526223009"
+      text: "📞 Hubungi admin via WhatsApp:\nhttps://wa.me/6282113780480"
     });
   }
 
@@ -166,7 +166,7 @@ if (session?.state === "awaiting_password") {
 📱 Klik link berikut untuk bayar lewat Qris:
 ${result.snapUrl}#/gopay-qris
 
-📌 Setelah bayar, hubungi admin: wa.me/6289526223009
+📌 Setelah bayar, hubungi admin: wa.me/6282113780480
 
 (Ketik 0 untuk kembali ke menu)`
     });
