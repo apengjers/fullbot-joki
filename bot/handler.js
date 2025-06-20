@@ -67,7 +67,7 @@ async function handleMessage(sock, msg) {
     const total = order.jumlah * (order.jumlah >= 100 ? hargaDiskon : hargaNormal) + kodeUnik;
 
     try {
-      const result = await createGopayPayment(order.orderId, total); // ganti nama jadi 'result' biar jelas
+      const result = await createGopayPayment(order.orderId, total);
 
       order.status = "menunggu_pembayaran";
       order.totalHarga = total;
@@ -77,19 +77,41 @@ async function handleMessage(sock, msg) {
 
       clearSession(sender);
 
-      await sock.sendMessage(sender, {
-        text: `✅ *Password diterima!*
+      try {
+        const qrBuffer = await getQrisScreenshot(result.snapUrl);
 
-    🆔 Order ID: *${order.orderId}*
-    💳 Total bayar: *Rp${total.toLocaleString()}*
+        await sock.sendMessage(sender, {
+          image: qrBuffer,
+          caption: `✅ *Password diterima!*
 
-    📱 Klik link berikut untuk bayar lewat GoPay:
-    ${result.snapUrl}
+🆔 Order ID: *${order.orderId}*
+💳 Total bayar: *Rp${total.toLocaleString()}*
 
-    📌 Setelah bayar, hubungi admin: wa.me/6289526223009
+📱 Klik untuk bayar langsung lewat GoPay:
+${result.snapUrl}
 
-    (Ketik 0 untuk kembali ke menu)`
-      });
+📸 Atau scan QRIS di atas lewat aplikasi e-wallet.
+
+📌 Setelah bayar, hubungi admin: wa.me/6289526223009
+
+(Ketik 0 untuk kembali ke menu)`
+        });
+      } catch (qrError) {
+        console.error("❌ Gagal ambil QR dari Snap:", qrError);
+        await sock.sendMessage(sender, {
+          text: `✅ *Password diterima!*
+
+🆔 Order ID: *${order.orderId}*
+💳 Total bayar: *Rp${total.toLocaleString()}*
+
+📱 Klik link berikut untuk bayar lewat GoPay:
+${result.snapUrl}
+
+📌 Setelah bayar, hubungi admin: wa.me/6289526223009
+
+(Ketik 0 untuk kembali ke menu)`
+        });
+      }
 
     } catch (error) {
       console.error("❌ Error saat membuat pembayaran Snap:", error);
@@ -97,7 +119,7 @@ async function handleMessage(sock, msg) {
         text: `❌ Terjadi kesalahan saat membuat pembayaran.\nSilakan coba lagi.\n\nError: ${error.message || error}`
       });
     }
-}
+  }
 
   // 👤 USERNAME
   if (session?.state === "awaiting_username") {
