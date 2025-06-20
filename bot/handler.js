@@ -89,10 +89,10 @@ async function handleMessage(sock, msg) {
 
 🆔 Order ID: *${order.orderId}*
 💳 Total bayar: *Rp${total.toLocaleString()}*
+🧭 Batas waktu pembayaran: 15 menit
 
 📱 Klik untuk bayar langsung pakai GoPay:
 ${qris.deeplinkUrl}
-Batas waktu pembayaran: 15 menit
 
 Atau scan QRIS di atas lewat aplikasi e-wallet.
 
