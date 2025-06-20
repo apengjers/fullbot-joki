@@ -58,7 +58,7 @@ async function handleMessage(sock, msg) {
   // ⏳ Ambil session user
   const session = getSession(sender);
 
-  // 🔐 Password
+    // 🔐 Password
   if (session?.state === "awaiting_password") {
     const order = await Order.findOne({ orderId: session.orderId });
     if (!order) {
@@ -70,31 +70,41 @@ async function handleMessage(sock, msg) {
     const kodeUnik = Math.floor(Math.random() * 100) + 1;
     const total = order.jumlah * (order.jumlah >= 100 ? hargaDiskon : hargaNormal) + kodeUnik;
 
-    const va = await createBcaVA(order.orderId, total);
+    try {
+      const gopay = await createGopayQR(order.orderId, total);
 
-    order.status = "menunggu_pembayaran";
-    order.totalHarga = total;
-    order.bank = va.bank;
-    order.va_number = va.va_number;
-    order.kodeUnik = kodeUnik;
-    await order.save();
+      order.status = "menunggu_pembayaran";
+      order.totalHarga = total;
+      order.kodeUnik = kodeUnik;
+      order.qr_url = gopay.qr_url;
+      order.metode = "gopay";
+      await order.save();
 
-    clearSession(sender);
+      clearSession(sender);
 
-    return await sock.sendMessage(sender, {
-      text: `✅ *Password diterima!*
+      return await sock.sendMessage(sender, {
+        text: `✅ *Password diterima!*
 
-🆔 Order ID: *${order.orderId}*
-💰 Total bayar: *Rp${total.toLocaleString()}*
-🏦 Bank: *${va.bank.toUpperCase()}*
-🔢 Nomor VA: *${va.va_number}*
+  🆔 Order ID: *${order.orderId}*
+  💰 Total bayar: *Rp${total.toLocaleString()}*
+  📱 Metode: *GoPay (QRIS)*
 
-Silakan transfer ke nomor VA di atas sebelum expired.
-Setelah bayar, hubungi admin: wa.me/6289526223009
+  Silakan *scan QR berikut* untuk membayar:
+  ${gopay.qr_url}
 
-(Ketik 0 untuk kembali ke menu utama)`
-    });
+  Setelah bayar, hubungi admin: wa.me/6289526223009
+
+  (Ketik 0 untuk kembali ke menu utama)`
+      });
+
+    } catch (error) {
+      console.error("❌ Error saat membuat pembayaran GoPay:", error);
+      return await sock.sendMessage(sender, {
+        text: `❌ Terjadi kesalahan saat membuat pembayaran.\nSilakan coba lagi.\n\nError: ${error.message || error}`
+      });
+    }
   }
+
 
   // 👤 Username
   if (session?.state === "awaiting_username") {

@@ -8,44 +8,43 @@ const core = new midtransClient.CoreApi({
 });
 
 /**
- * Buat transaksi VA BCA
+ * Buat transaksi GoPay (QRIS)
  * @param {string} orderId
  * @param {number} amount
- * @returns {{ va_number: string, bank: string, total: number }}
+ * @returns {{ qr_url: string, total: number }}
  */
-async function createBcaVA(orderId, amount) {
+async function createGopayQR(orderId, amount) {
   const parameter = {
-    payment_type: "bank_transfer",
+    payment_type: "gopay",
     transaction_details: {
       order_id: orderId,
       gross_amount: amount,
     },
-    bank_transfer: {
-      bank: "bca",
-    },
-    customer_details: {
-      first_name: "Customer",
+    gopay: {
+      enable_callback: false,
+      callback_url: "", // kosongkan atau isi dengan URL callback-mu
     },
   };
 
   try {
     const response = await core.charge(parameter);
-    console.log("✅ VA Response dari Midtrans:");
+    console.log("✅ GoPay QR Response dari Midtrans:");
     console.log(JSON.stringify(response, null, 2));
 
-    const va = response.va_numbers?.[0];
+    const qrUrl = response.actions?.find(
+      (act) => act.name === "generate-qr-code"
+    )?.url;
 
-    if (!va) throw new Error("VA number tidak ditemukan.");
+    if (!qrUrl) throw new Error("QRIS URL tidak ditemukan dari GoPay.");
 
     return {
-      va_number: va.va_number,
-      bank: va.bank,
+      qr_url: qrUrl,
       total: amount,
     };
   } catch (error) {
-    console.error("❌ Gagal membuat VA:", error.response?.data || error.message);
+    console.error("❌ Gagal membuat QRIS GoPay:", error.response?.data || error.message);
     throw error;
   }
 }
 
-module.exports = { createBcaVA };
+module.exports = { createGopayQR };
