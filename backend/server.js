@@ -21,6 +21,26 @@ mongoose.connect(process.env.MONGODB_URI, {
   .catch(err => console.error("❌ MongoDB connection error:", err));
 
 let sockGlobal = null;
+// ✅ Scheduler untuk hapus order kadaluarsa (menunggu_pembayaran > 20 menit)
+setInterval(async () => {
+  const batasWaktu = new Date(Date.now() - 20 * 60 * 1000); // 20 menit
+  const expiredOrders = await Order.find({
+    status: "menunggu_pembayaran",
+    updatedAt: { $lt: batasWaktu },
+  });
+
+  if (expiredOrders.length > 0) {
+    console.log(`🗑️ Menghapus ${expiredOrders.length} order kadaluarsa...`);
+    for (const ord of expiredOrders) {
+      console.log(`- Hapus Order ID: ${ord.orderId}`);
+    }
+
+    await Order.deleteMany({
+      status: "menunggu_pembayaran",
+      updatedAt: { $lt: batasWaktu },
+    });
+  }
+}, 60 * 1000); // Cek setiap 1 menit
 
 // ✅ Webhook Midtrans
 app.post("/midtrans-webhook", async (req, res) => {
@@ -108,15 +128,6 @@ app.put("/api/orders/:id/complete", async (req, res) => {
     res.sendStatus(200);
   } catch {
     res.status(500).json({ message: "Gagal update status" });
-  }
-});
-
-app.put("/api/orders/:id/note", async (req, res) => {
-  try {
-    await Order.findByIdAndUpdate(req.params.id, { notes: req.body.notes });
-    res.sendStatus(200);
-  } catch {
-    res.status(500).json({ message: "Gagal update notes" });
   }
 });
 
