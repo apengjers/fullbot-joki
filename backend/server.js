@@ -25,7 +25,7 @@ let sockGlobal = null;
 setInterval(async () => {
   const batasWaktu = new Date(Date.now() - 20 * 60 * 1000); // 20 menit
   const expiredOrders = await Order.find({
-    status: "menunggu_pembayaran",
+    status: "menunggu_pembayaran" || "menunggu_password" || "menunggu_username",
     updatedAt: { $lt: batasWaktu },
   });
 
