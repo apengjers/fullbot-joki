@@ -92,6 +92,7 @@ async function handleMessage(sock, msg) {
 
 📱 Klik untuk bayar langsung pakai GoPay:
 ${qris.deeplinkUrl}
+Batas waktu pembayaran: 15 menit
 
 Atau scan QRIS di atas lewat aplikasi e-wallet.
 
@@ -151,7 +152,7 @@ _Ketik 0 untuk batal dan kembali ke menu_`,
 
   if (text === "3" || text.includes("admin")) {
     return await sock.sendMessage(sender, {
-      text: "📞 Hubungi admin via WhatsApp:\nhttps://wa.me/628xxxxxxxxxx",
+      text: "📞 Hubungi admin via WhatsApp:\nhttps://wa.me/6289526223009"
     });
   }
 
