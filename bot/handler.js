@@ -84,20 +84,19 @@ async function handleMessage(sock, msg) {
     clearSession(sender);
 
     return await sock.sendMessage(sender, {
-      image: { url: qris.qrUrl },
-      caption: `✅ Password diterima.
+    text: `✅ Password diterima!
 
 🆔 Order ID: *${order.orderId}*
 💳 Total bayar: *Rp${total.toLocaleString()}*
-🧭 Batas waktu pembayaran: 15 menit
 
-📱 Klik untuk bayar langsung pakai GoPay:
-${qris.deeplinkUrl}
+📱 Klik link berikut untuk bayar langsung lewat GoPay:
+${gopay.deeplinkUrl}
 
-Atau scan QRIS di atas lewat aplikasi e-wallet.
+📌 Setelah bayar, hubungi admin: wa.me/62xxxxx
 
-Setelah bayar, hubungi admin untuk proses joki.`,
-    });
+(Ketik 0 untuk kembali ke menu)`
+  });
+
   } catch (error) {
     console.error("❌ Error saat membuat pembayaran GoPay:", error);
     return await sock.sendMessage(sender, {

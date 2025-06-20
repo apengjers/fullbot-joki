@@ -4,7 +4,7 @@ const midtransClient = require("midtrans-client");
 require("dotenv").config();
 
 const core = new midtransClient.CoreApi({
-  isProduction: true,
+  isProduction: true, // Ganti false jika masih sandbox
   serverKey: process.env.MIDTRANS_SERVER_KEY,
   clientKey: process.env.MIDTRANS_CLIENT_KEY,
 });
@@ -24,17 +24,20 @@ async function createGopayPayment(orderId, amount) {
 
   try {
     const response = await core.charge(parameter);
-    console.log("✅ GoPay QR Response dari Midtrans:");
+    console.log("✅ GoPay Response dari Midtrans:");
     console.log(JSON.stringify(response, null, 2));
 
+    const deeplink = response.actions.find((a) => a.name === "deeplink-redirect")?.url;
+
+    if (!deeplink) throw new Error("Deeplink URL tidak ditemukan dalam response Midtrans.");
+
     return {
-      qrUrl: response.actions.find((a) => a.name === "generate-qr-code")?.url,
-      deeplinkUrl: response.actions.find((a) => a.name === "deeplink-redirect")?.url,
+      deeplinkUrl: deeplink,
       total: amount,
     };
 
   } catch (error) {
-    console.error("❌ Gagal membuat GoPay QR di Midtrans:");
+    console.error("❌ Gagal membuat GoPay payment di Midtrans:");
     console.error(error.response?.data || error.message);
     throw error;
   }
