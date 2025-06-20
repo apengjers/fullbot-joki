@@ -92,7 +92,7 @@ async function handleMessage(sock, msg) {
 📱 Klik link berikut untuk bayar langsung lewat GoPay:
 ${gopay.deeplinkUrl}
 
-📌 Setelah bayar, hubungi admin: wa.me/62xxxxx
+📌 Setelah bayar, hubungi admin: wa.me/6289526223009
 
 (Ketik 0 untuk kembali ke menu)`
   });
