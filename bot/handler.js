@@ -61,29 +61,33 @@ async function handleMessage(sock, msg) {
 
     // 🔐 Password
   if (session?.state === "awaiting_password") {
-    const order = await Order.findOne({ orderId: session.orderId });
-    if (!order) {
-      clearSession(sender);
-      return await sock.sendMessage(sender, { text: "❌ Order tidak ditemukan. Silakan mulai ulang dengan ketik 1." });
-    }
+  const order = await Order.findOne({ orderId: session.orderId });
+  if (!order) {
+    clearSession(sender);
+    return await sock.sendMessage(sender, { text: "❌ Order tidak ditemukan. Silakan mulai ulang dengan ketik 1." });
+  }
 
-    order.password = text;
-    const kodeUnik = Math.floor(Math.random() * 100) + 1;
-    const total = order.jumlah * (order.jumlah >= 100 ? hargaDiskon : hargaNormal) + kodeUnik;
+  order.password = text;
+  const kodeUnik = Math.floor(Math.random() * 100) + 1;
+  const total = order.jumlah * (order.jumlah >= 100 ? hargaDiskon : hargaNormal) + kodeUnik;
 
-      try {
-        const qris = await createGopayPayment(userOrder.orderId, total);
+  try {
+    const qris = await createGopayPayment(order.orderId, total);
 
-        order.status = "menunggu_pembayaran";
-        order.totalHarga = total;
-        order.qrUrl = qris.qrUrl;
-        order.deeplinkUrl = qris.deeplinkUrl;
-        await order.save();
+    order.status = "menunggu_pembayaran";
+    order.totalHarga = total;
+    order.qrUrl = qris.qrUrl;
+    order.deeplinkUrl = qris.deeplinkUrl;
+    order.kodeUnik = kodeUnik;
+    await order.save();
 
-        await sock.sendMessage(sender, {
-          image: { url: qris.qrUrl },
-          caption: `✅ Password diterima.
+    clearSession(sender);
 
+    return await sock.sendMessage(sender, {
+      image: { url: qris.qrUrl },
+      caption: `✅ Password diterima.
+
+🆔 Order ID: *${order.orderId}*
 💳 Total bayar: *Rp${total.toLocaleString()}*
 
 📱 Klik untuk bayar langsung pakai GoPay:
@@ -92,15 +96,15 @@ ${qris.deeplinkUrl}
 Atau scan QRIS di atas lewat aplikasi e-wallet.
 
 Setelah bayar, hubungi admin untuk proses joki.`,
-});
-
-    } catch (error) {
-      console.error("❌ Error saat membuat pembayaran GoPay:", error);
-      return await sock.sendMessage(sender, {
-        text: `❌ Terjadi kesalahan saat membuat pembayaran.\nSilakan coba lagi.\n\nError: ${error.message || error}`
-      });
-    }
+    });
+  } catch (error) {
+    console.error("❌ Error saat membuat pembayaran GoPay:", error);
+    return await sock.sendMessage(sender, {
+      text: `❌ Terjadi kesalahan saat membuat pembayaran.\nSilakan coba lagi.\n\nError: ${error.message || error}`
+    });
   }
+}
+
 
 
   // 👤 Username
