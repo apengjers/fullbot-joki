@@ -33,85 +33,74 @@ function generateOrderId() {
   return "ORD" + Date.now();
 }
 
-// Message Handler
 async function handleMessage(sock, msg) {
   const sender = msg.key.remoteJid;
   const text = msg.message?.conversation?.trim().toLowerCase() ||
                msg.message?.extendedTextMessage?.text?.trim().toLowerCase() || "";
   if (!text) return;
 
-  // ✅ Anti-spam delay
+  // Anti-spam delay
   const now = Date.now();
   const last = cooldownMap.get(sender) || 0;
   if (now - last < 1500) return;
   cooldownMap.set(sender, now);
-  // ✅ MENU UTAMA
-  if (text === "1") {
-    return await sock.sendMessage(sender, { text: listJoki });
-  }
 
-  if (text === "2" || text.includes("cek")) {
-    const orders = await Order.find({ waNumber: sender }).sort({ _id: -1 });
-    if (orders.length === 0) {
-      return await sock.sendMessage(sender, { text: "❌ Kamu belum pernah memesan joki." });
-    }
-
-    let msgText = "*📦 Riwayat Pesanan Kamu:*\n\n";
-    for (const o of orders) {
-      msgText += `🆔 *${o.orderId}*\n👤 Username: ${o.username || "-"}\n💰 ${o.jumlah}M | Rp${o.totalHarga?.toLocaleString() || 0}\n📌 Status: *${o.status}*\n\n`;
-    }
-
-    return await sock.sendMessage(sender, { text: msgText });
-  }
-
-  if (text === "3" || text.includes("admin")) {
-    return await sock.sendMessage(sender, {
-      text: "📞 Hubungi admin via WhatsApp:\nhttps://wa.me/6282113780480"
-    });
-  }
-
-  // 🔁 Menu kembali
+  // Menu kembali
   if (text === "0") {
     clearSession(sender);
     await sock.sendMessage(sender, { text: menuUtama });
-    return; // ⬅️ Tambahkan return di sini
-  }
-
-  // 🔢 JUMLAH CDID
-  const jumlah = parseInt(text.replace("m", ""));
-  if (!isNaN(jumlah)) {
-    if (jumlah <= 0) {
-      return await sock.sendMessage(sender, { text: "❌ Minimal order 1M. Ketik 0 untuk kembali ke menu." });
-    }
-
-    const hargaPerM = jumlah >= 100 ? hargaDiskon : hargaNormal;
-    const total = jumlah * hargaPerM;
-    const orderId = generateOrderId();
-
-    const newOrder = new Order({
-      orderId,
-      waNumber: sender,
-      jumlah,
-      totalHarga: total,
-      status: "menunggu_username",
-    });
-
-    await newOrder.save();
-    setSession(sender, { state: "awaiting_username", orderId });
-
-    return await sock.sendMessage(sender, {
-      text: `✅ *Order ${jumlah}M dibuat!*
-💵 Harga per M: Rp${hargaPerM.toLocaleString()}
-💰 Total: Rp${total.toLocaleString()}
-
-Sekarang kirimkan *username akun CDID*-mu.
-_Ketik 0 untuk batal dan kembali ke menu_`,
-    });
+    return;
   }
 
   const session = getSession(sender);
 
-   // 👤 USERNAME
+  // STATE: AWAITING_PASSWORD
+  if (session?.state === "awaiting_password") {
+    const order = await Order.findOne({ orderId: session.orderId });
+    if (!order) {
+      clearSession(sender);
+      return await sock.sendMessage(sender, { text: "❌ Order tidak ditemukan. Ketik 1 untuk mulai ulang." });
+    }
+
+    order.password = text;
+    const kodeUnik = Math.floor(Math.random() * 100) + 1;
+    const hargaPerM = order.jumlah >= 100 ? hargaDiskon : hargaNormal;
+    const total = order.jumlah * hargaPerM + kodeUnik;
+
+    try {
+      const result = await createGopayPayment(order.orderId, total);
+
+      order.status = "menunggu_pembayaran";
+      order.totalHarga = total;
+      order.kodeUnik = kodeUnik;
+      order.snapUrl = result.snapUrl;
+      await order.save();
+
+      clearSession(sender);
+
+      return await sock.sendMessage(sender, {
+        text: `✅ *Password diterima!*
+
+🆔 Order ID: *${order.orderId}*
+💳 Total bayar: *Rp${total.toLocaleString()}*
+
+📱 Klik link berikut untuk bayar lewat Qris:
+${result.snapUrl}#/gopay-qris
+
+📌 Setelah bayar, admin akan segera menghubungi anda
+
+(Ketik 0 untuk kembali ke menu)`
+      });
+
+    } catch (error) {
+      console.error("❌ Error saat membuat pembayaran Snap:", error);
+      return await sock.sendMessage(sender, {
+        text: `❌ Terjadi kesalahan saat membuat pembayaran.\nSilakan coba lagi.\n\nError: ${error.message || error}`
+      });
+    }
+  }
+
+  // STATE: AWAITING_USERNAME
   if (session?.state === "awaiting_username") {
     const order = await Order.findOne({ orderId: session.orderId });
     if (!order) {
@@ -134,52 +123,71 @@ _Ketik 0 untuk batal dan kembali ke menu_`,
     });
   }
 
-  // 🔐 PASSWORD
-if (session?.state === "awaiting_password") {
-  const order = await Order.findOne({ orderId: session.orderId });
-  if (!order) {
-    clearSession(sender);
-    return await sock.sendMessage(sender, { text: "❌ Order tidak ditemukan. Ketik 1 untuk mulai ulang." });
+  // STATE: AWAITING_JUMLAH
+  if (session?.state === "awaiting_jumlah") {
+    const jumlah = parseInt(text.replace("m", ""));
+    if (!isNaN(jumlah)) {
+      if (jumlah <= 0) {
+        return await sock.sendMessage(sender, { text: "❌ Minimal order 1M. Ketik 0 untuk kembali ke menu." });
+      }
+
+      const hargaPerM = jumlah >= 100 ? hargaDiskon : hargaNormal;
+      const total = jumlah * hargaPerM;
+      const orderId = generateOrderId();
+
+      const newOrder = new Order({
+        orderId,
+        waNumber: sender,
+        jumlah,
+        totalHarga: total,
+        status: "menunggu_username",
+      });
+
+      await newOrder.save();
+      setSession(sender, { state: "awaiting_username", orderId });
+
+      return await sock.sendMessage(sender, {
+        text: `✅ *Order ${jumlah}M dibuat!*
+💵 Harga per M: Rp${hargaPerM.toLocaleString()}
+💰 Total: Rp${total.toLocaleString()}
+
+Sekarang kirimkan *username akun CDID*-mu.
+_Ketik 0 untuk batal dan kembali ke menu_`,
+      });
+    } else {
+      return await sock.sendMessage(sender, { text: "❌ Format jumlah tidak dikenali. Contoh: 10 atau 10M" });
+    }
   }
 
-  order.password = text;
-  const kodeUnik = Math.floor(Math.random() * 100) + 1;
-  const total = order.jumlah * (order.jumlah >= 100 ? hargaDiskon : hargaNormal) + kodeUnik;
+  // ===== MENU UTAMA (HANYA JIKA TIDAK DALAM SESI) =====
+  if (!session) {
+    if (text === "1" || text.includes("joki")) {
+      setSession(sender, { state: "awaiting_jumlah" });
+      return await sock.sendMessage(sender, { text: listJoki });
+    }
 
-  try {
-    const result = await createGopayPayment(order.orderId, total);
+    if (text === "2" || text.includes("cek")) {
+      const orders = await Order.find({ waNumber: sender }).sort({ _id: -1 });
+      if (orders.length === 0) {
+        return await sock.sendMessage(sender, { text: "❌ Kamu belum pernah memesan joki." });
+      }
 
-    order.status = "menunggu_pembayaran";
-    order.totalHarga = total;
-    order.kodeUnik = kodeUnik;
-    order.snapUrl = result.snapUrl;
-    await order.save();
+      let msgText = "*📦 Riwayat Pesanan Kamu:*\n\n";
+      for (const o of orders) {
+        msgText += `🆔 *${o.orderId}*\n👤 Username: ${o.username || "-"}\n💰 ${o.jumlah}M | Rp${o.totalHarga?.toLocaleString() || 0}\n📌 Status: *${o.status}*\n\n`;
+      }
 
-    clearSession(sender);
+      return await sock.sendMessage(sender, { text: msgText });
+    }
 
-    return await sock.sendMessage(sender, {
-      text: `✅ *Password diterima!*
-
-🆔 Order ID: *${order.orderId}*
-💳 Total bayar: *Rp${total.toLocaleString()}*
-
-📱 Klik link berikut untuk bayar lewat Qris:
-${result.snapUrl}#/gopay-qris
-
-📌 Setelah bayar, hubungi admin: wa.me/6282113780480
-
-(Ketik 0 untuk kembali ke menu)`
-    });
-
-  } catch (error) {
-    console.error("❌ Error saat membuat pembayaran Snap:", error);
-    return await sock.sendMessage(sender, {
-      text: `❌ Terjadi kesalahan saat membuat pembayaran.\nSilakan coba lagi.\n\nError: ${error.message || error}`
-    });
+    if (text === "3" || text.includes("admin")) {
+      return await sock.sendMessage(sender, {
+        text: "📞 Hubungi admin via WhatsApp:\nhttps://wa.me/6282113780480\n📱 Discord:\nhttps://discord.gg/A98JsvGZ"
+      });
+    }
   }
-}
 
-  // 🚫 Salah input
+  // 🚫 Input tidak dikenali
   return await sock.sendMessage(sender, { text: menuUtama });
 }
 

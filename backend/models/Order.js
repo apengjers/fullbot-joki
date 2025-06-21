@@ -9,8 +9,6 @@ const orderSchema = new mongoose.Schema({
   jumlah: Number,
   totalHarga: Number,
   status: String,
-  bank: String,
-  va_number: String,
   qrUrl: String,
   deeplinkUrl: String,
   kodeUnik: Number,
