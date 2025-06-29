@@ -16,7 +16,12 @@ const orderSchema = new mongoose.Schema({
   worker: { type: String, default: "" },
   discordMessageId: String,
   discordChannelId: String,
-  createdAt: { type: Date, default: Date.now }
+  createdAt: { type: Date, default: Date.now },
+  jenis: {
+  type: String,
+  enum: ["uang", "minigame"],
+  default: "uang" 
+  }
 }, {
   timestamps: true // ✅ wajib biar bisa pakai .sort({ createdAt: -1 })
 });

@@ -5,6 +5,8 @@ const { createGopayPayment } = require("../backend/models/midtrans");
 const cooldownMap = new Map();
 const hargaNormal = 1000;
 const hargaDiskon = 750;
+const hargaNormalMG = 100;
+const hargaDiskonMG = 80;
 
 const menuUtama = `👋 *Selamat datang di layanan Joki CDID!*
 
@@ -29,6 +31,26 @@ _Ketik jumlah yang diinginkan._
 (Ketik 0 untuk kembali ke menu utama)
 `;
 
+const listjokiMG = `📊 *Pilih jumlah Point Minigame yang ingin dijoki:*
+• 50
+• 100
+• 250
+• 500
+• 1000
+• Custom Kelipatan 10 dan minimal 50 (contoh: 30p atau 30)
+
+_Ketik jumlah yang diinginkan._
+(Ketik 0 untuk kembali ke menu utama)
+`;
+
+const pilihJoki = `🚗Menu Joki CDID🚗
+
+1️⃣ Joki UANG CDID💸
+2️⃣ Joki Point Minigame CDID✨
+      
+Ketik angka pilihanmu.
+Ketik 0 untuk kembali ke menu utama.`;
+
 function generateOrderId() {
   return "ORD" + Date.now();
 }
@@ -42,7 +64,7 @@ async function handleMessage(sock, msg) {
   // Anti-spam delay
   const now = Date.now();
   const last = cooldownMap.get(sender) || 0;
-  if (now - last < 1500) return;
+  if (now - last < 1000) return;
   cooldownMap.set(sender, now);
 
   // Menu kembali
@@ -83,6 +105,7 @@ async function handleMessage(sock, msg) {
 
 🆔 Order ID: *${order.orderId}*
 💳 Total bayar: *Rp${total.toLocaleString()}*
+🧭 Batas waktu pembayaran: *15 menit*
 
 📱 Klik link berikut untuk bayar lewat Qris:
 ${result.snapUrl}#/gopay-qris
@@ -100,7 +123,56 @@ ${result.snapUrl}#/gopay-qris
     }
   }
 
+  // STATE: AWAITING_PASSWORD_MG
+  if (session?.state === "awaiting_passwordmg") {
+    const order = await Order.findOne({ orderId: session.orderId });
+    if (!order) {
+      clearSession(sender);
+      return await sock.sendMessage(sender, { text: "❌ Order tidak ditemukan. Ketik 1 untuk mulai ulang." });
+    }
+
+    order.password = text;
+    const kodeUnik = Math.floor(Math.random() * 100) + 1;
+    const hargaPerPoin = order.jumlah >= 1000 ? hargaDiskonMG : hargaNormalMG;
+    const total = order.jumlah * hargaPerPoin + kodeUnik;
+
+    try {
+      const result = await createGopayPayment(order.orderId, total);
+
+      order.status = "menunggu_pembayaran";
+      order.totalHarga = total;
+      order.kodeUnik = kodeUnik;
+      order.snapUrl = result.snapUrl;
+      await order.save();
+
+      clearSession(sender);
+
+      return await sock.sendMessage(sender, {
+        text: `✅ *Password diterima!*
+
+🆔 Order ID: *${order.orderId}*
+💳 Total bayar: *Rp${total.toLocaleString()}*
+🧭 Batas waktu pembayaran: *15 menit*
+
+📱 Klik link berikut untuk bayar lewat Qris:
+${result.snapUrl}#/gopay-qris
+
+📌 Setelah bayar, admin akan segera menghubungi anda
+
+(Ketik 0 untuk kembali ke menu)`
+      });
+
+    } catch (error) {
+      console.error("❌ Error saat membuat pembayaran Snap:", error);
+      return await sock.sendMessage(sender, {
+        text: `❌ Terjadi kesalahan saat membuat pembayaran.\nSilakan coba lagi.\n\nError: ${error.message || error}`
+      });
+    }
+  }
+
+  // ==============================
   // STATE: AWAITING_USERNAME
+  // ==============================
   if (session?.state === "awaiting_username") {
     const order = await Order.findOne({ orderId: session.orderId });
     if (!order) {
@@ -118,12 +190,41 @@ ${result.snapUrl}#/gopay-qris
       text: `✅ *Username diterima.*
 
 Sekarang kirimkan *password akun CDID*-mu.
-⚠️ *Pastikan 2FA nonaktif ya!*
+⚠️ *Pastikan 2FA nonaktif ya agar mempermudah proses login!
+Jika tidak, admin akan segera menghubungi anda saat order diproses*
 _Ketik 0 untuk batal dan kembali ke menu_`,
     });
   }
 
+  // ==============================
+  // STATE: AWAITING_USERNAME_MG
+  // ==============================
+  if (session?.state === "awaiting_usernamemg") {
+    const order = await Order.findOne({ orderId: session.orderId });
+    if (!order) {
+      clearSession(sender);
+      return await sock.sendMessage(sender, { text: "❌ Order tidak ditemukan. Ketik 1 untuk mulai ulang." });
+    }
+
+    order.username = text;
+    order.status = "menunggu_password";
+    await order.save();
+
+    setSession(sender, { state: "awaiting_passwordmg", orderId: order.orderId });
+
+    return await sock.sendMessage(sender, {
+      text: `✅ *Username diterima.*
+
+Sekarang kirimkan *password akun CDID*-mu.
+⚠️ *Pastikan 2FA nonaktif ya agar mempermudah proses login!
+Jika tidak, admin akan segera menghubungi anda saat order diproses*
+_Ketik 0 untuk batal dan kembali ke menu_`,
+    });
+  }
+
+  // ==============================
   // STATE: AWAITING_JUMLAH
+  // ==============================
   if (session?.state === "awaiting_jumlah") {
     const jumlah = parseInt(text.replace("m", ""));
     if (!isNaN(jumlah)) {
@@ -141,6 +242,7 @@ _Ketik 0 untuk batal dan kembali ke menu_`,
         jumlah,
         totalHarga: total,
         status: "menunggu_username",
+        jenis: "uang",
       });
 
       await newOrder.save();
@@ -159,11 +261,76 @@ _Ketik 0 untuk batal dan kembali ke menu_`,
     }
   }
 
-  // ===== MENU UTAMA (HANYA JIKA TIDAK DALAM SESI) =====
+  // ==============================
+  // STATE: AWAITING_JUMLAHMG
+  // ==============================
+  if (session?.state === "awaiting_jumlahmg") {
+    const jumlah = parseInt(text.replace("p", ""));
+    if (!isNaN(jumlah)) {
+      if (jumlah < 50) {
+        return await sock.sendMessage(sender, { text: "❌ Minimal order 50 poin. Ketik 0 untuk kembali ke menu." });
+      }
+      if (jumlah % 10 !== 0) {
+        return await sock.sendMessage(sender, { text: "❌ Jumlah poin harus kelipatan 10. Ketik 0 untuk kembali ke menu." });
+      }
+
+      const hargaPerPoin = jumlah >= 1000 ? hargaDiskonMG : hargaNormalMG;
+      const total = jumlah * hargaPerPoin;
+      const orderId = generateOrderId();
+
+      const newOrder = new Order({
+        orderId,
+        waNumber: sender,
+        jumlah,
+        totalHarga: total,
+        status: "menunggu_username",
+        jenis: "minigame",
+      });
+
+      await newOrder.save();
+      setSession(sender, { state: "awaiting_usernamemg", orderId });
+
+      return await sock.sendMessage(sender, {
+        text: `✅ *Order ${jumlah} poin Minigame dibuat!*
+💵 Harga per poin: Rp${hargaPerPoin.toLocaleString()}
+💰 Total: Rp${total.toLocaleString()}
+
+Sekarang kirimkan *username akun CDID*-mu.
+_Ketik 0 untuk batal dan kembali ke menu_`,
+      });
+    } else {
+      return await sock.sendMessage(sender, { text: "❌ Format jumlah tidak dikenali. Contoh: 100 atau 100p" });
+    }
+  }
+
+  // ==============================
+  // STATE: AWAITING_JOKI
+  // ==============================
+  if (session?.state === "awaiting_joki") {
+    switch (parseInt(text)) {
+      case 1:
+        setSession(sender, { state: "awaiting_jumlah" });
+        await sock.sendMessage(sender, { text: listJoki });
+        return;
+        break;
+      case 2:
+        setSession(sender, { state: "awaiting_jumlahmg" });
+        await sock.sendMessage(sender, { text: listjokiMG });
+        return;
+        break;
+      default:
+        await sock.sendMessage(sender, { text: "❌ Pilihan tidak dikenali. Ketik 0 untuk kembali ke menu utama." });
+    }
+  }
+
+  // ==============================
+  // MENU UTAMA (HANYA JIKA TIDAK DALAM SESI)
+  // ==============================
   if (!session) {
     if (text === "1" || text.includes("joki")) {
-      setSession(sender, { state: "awaiting_jumlah" });
-      return await sock.sendMessage(sender, { text: listJoki });
+      setSession(sender, { state: "awaiting_joki" });
+      await sock.sendMessage(sender, { text: pilihJoki });
+      return;
     }
 
     if (text === "2" || text.includes("cek")) {
@@ -174,8 +341,10 @@ _Ketik 0 untuk batal dan kembali ke menu_`,
 
       let msgText = "*📦 Riwayat Pesanan Kamu:*\n\n";
       for (const o of orders) {
-        msgText += `🆔 *${o.orderId}*\n👤 Username: ${o.username || "-"}\n💰 ${o.jumlah}M | Rp${o.totalHarga?.toLocaleString() || 0}\n📌 Status: *${o.status}*\n\n`;
+        const satuan = o.jenis === "minigame" ? "P" : (o.jenis || "uang") === "uang" ? "M" : "M";
+        msgText += `🆔 *${o.orderId}*\n👤 Username: ${o.username || "-"}\n💰 ${o.jumlah}${satuan} | Rp${o.totalHarga?.toLocaleString() || 0}\n📌 Status: *${o.status}*\n\n`;
       }
+
 
       return await sock.sendMessage(sender, { text: msgText });
     }
