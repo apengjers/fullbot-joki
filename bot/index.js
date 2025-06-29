@@ -1,11 +1,12 @@
+// index.js
 const { default: makeWASocket, useMultiFileAuthState, DisconnectReason } = require("@whiskeysockets/baileys");
 const { handleMessage } = require("./handler");
 const { Boom } = require("@hapi/boom");
 const qrcode = require("qrcode-terminal");
 require("dotenv").config();
 
-const webhookApp = require("../backend/server"); // WAJIB
-const { client: discordClient } = require("../discord/discordBot"); // Tambahan: Import bot Discord
+const webhookApp = require("../backend/server"); // untuk Midtrans webhook
+const { client: discordClient, registerBot } = require("../discord/discordBot"); // Discord + inject WA
 
 async function startBot() {
   const { state, saveCreds } = await useMultiFileAuthState("auth");
@@ -42,9 +43,12 @@ async function startBot() {
     await handleMessage(sock, msg);
   });
 
-  // Inject WA socket ke webhook Midtrans
+  // inject WA socket ke Midtrans webhook
   webhookApp.setBotSocket(sock);
+
+  // inject WA socket ke Discord bot
+  registerBot(sock);
 }
 
 startBot();
-discordClient.login(process.env.DISCORD_TOKEN); // 🔥 Tambahan ini WAJIB
+discordClient.login(process.env.DISCORD_TOKEN);

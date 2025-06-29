@@ -3,6 +3,7 @@ require("dotenv").config();
 const { Client, GatewayIntentBits, Partials, EmbedBuilder, ButtonBuilder, ButtonStyle, ActionRowBuilder, Events } = require("discord.js");
 const mongoose = require("mongoose");
 const Order = require("../backend/models/Order");
+const notifyCustomer = require("../bot/notifier"); // <= tambahkan ini
 
 const client = new Client({
   intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages, GatewayIntentBits.MessageContent],
@@ -13,62 +14,79 @@ client.once("ready", () => {
   console.log(`🤖 Bot Discord login sebagai ${client.user.tag}`);
 });
 
-client.on(Events.InteractionCreate, async interaction => {
-  if (!interaction.isButton()) return;
+// fungsi untuk registrasi sock (WhatsApp)
+function registerBot(sock) {
+  client.on(Events.InteractionCreate, async interaction => {
+    if (!interaction.isButton()) return;
 
-  const [action, orderId] = interaction.customId.split("_");
-  const order = await Order.findOne({ orderId });
-  if (!order) return interaction.reply({ content: "❌ Order tidak ditemukan.", ephemeral: true });
+    const [action, orderId] = interaction.customId.split("_");
+    const order = await Order.findOne({ orderId });
+    if (!order) return interaction.reply({ content: "❌ Order tidak ditemukan.", ephemeral: true });
 
-  if (action === "kerjakan") {
-    if (order.worker) {
-      return interaction.reply({ content: `❌ Order sudah dikerjakan oleh ${order.worker}`, ephemeral: true });
+    if (action === "kerjakan") {
+      if (order.worker) {
+        return interaction.reply({ content: `❌ Order sudah dikerjakan oleh ${order.worker}`, ephemeral: true });
+      }
+
+      order.worker = interaction.user.username;
+      await order.save();
+
+      try {
+        const channel = await client.channels.fetch(order.discordChannelId);
+        const msg = await channel.messages.fetch(order.discordMessageId);
+
+        const updatedEmbed = EmbedBuilder.from(msg.embeds[0]).addFields({
+          name: "👨‍💻 Dikerjakan oleh",
+          value: order.worker,
+          inline: true
+        });
+
+        await msg.edit({ embeds: [updatedEmbed] });
+      } catch (err) {
+        console.error("❌ Gagal update pesan Discord:", err);
+      }
+
+      return interaction.reply({ content: `🛠️ Order ini sekarang dikerjakan oleh ${order.worker}`, ephemeral: true });
     }
 
-    order.worker = interaction.user.username;
-    await order.save();
+    if (action === "selesai") {
+      if (order.status === "selesai") {
+        return interaction.reply({ content: "❌ Order ini sudah ditandai selesai sebelumnya.", ephemeral: true });
+      }
 
-    try {
-      const channel = await client.channels.fetch(order.discordChannelId);
-      const msg = await channel.messages.fetch(order.discordMessageId);
+      order.status = "selesai";
+      await order.save();
 
-      const updatedEmbed = EmbedBuilder.from(msg.embeds[0]).addFields({
-        name: "👨‍💻 Dikerjakan oleh",
-        value: order.worker,
-        inline: true
-      });
+      // 🚀 kirim notifikasi ke WA
+      notifyCustomer(sock, order);
 
-      await msg.edit({ embeds: [updatedEmbed] });
-    } catch (err) {
-      console.error("❌ Gagal update pesan Discord:", err);
+      try {
+        const channel = await client.channels.fetch(order.discordChannelId);
+        const msg = await channel.messages.fetch(order.discordMessageId);
+
+        const embed = EmbedBuilder.from(msg.embeds[0]);
+        
+        // replace field Status agar tidak dobel
+        const newFields = embed.data.fields.map(field => {
+          if (field.name === "📦 Status") {
+            return { ...field, value: "✔ Selesai" };
+          }
+          return field;
+        });
+
+        embed.setFields(newFields);
+
+        await msg.edit({ embeds: [embed] });
+      } catch (err) {
+        console.error("❌ Gagal update pesan Discord:", err);
+      }
+
+      return interaction.reply({ content: "✅ Order ditandai sebagai selesai.", ephemeral: true });
     }
+  });
+}
 
-    return interaction.reply({ content: `🛠️ Order ini sekarang dikerjakan oleh ${order.worker}`, ephemeral: true });
-  }
-
-  if (action === "selesai") {
-    order.status = "selesai";
-    await order.save();
-
-    try {
-      const channel = await client.channels.fetch(order.discordChannelId);
-      const msg = await channel.messages.fetch(order.discordMessageId);
-
-      const updatedEmbed = EmbedBuilder.from(msg.embeds[0])
-        .addFields(
-          { name: "Status", value: "✔Selesai", inline: true },
-        );
-
-      await msg.edit({ embeds: [updatedEmbed] });
-    } catch (err) {
-      console.error("❌ Gagal update pesan Discord:", err);
-    }
-
-    return interaction.reply({ content: "✅ Order ditandai sebagai selesai.", ephemeral: true });
-  }
-});
-
-// Fungsi kirim pesan ke Discord
+// Fungsi kirim pesan order baru
 async function sendOrderToDiscord(order) {
   const embed = new EmbedBuilder()
     .setTitle("🟢 Pesanan Baru Dibayar!")
@@ -83,7 +101,7 @@ async function sendOrderToDiscord(order) {
           : "-", 
         inline: true 
       },
-      { name: "🔢 Jumlah", value: `${order.jumlah}M`, inline: true },
+      { name: "🔢 Jumlah", value: `${order.jumlah}${order.jenis === "minigame" ? "P" : "M"}`, inline: true },
       { name: "💳 Total", value: `Rp${order.totalHarga.toLocaleString()}`, inline: true },
       { name: "📦 Status", value: order.status, inline: true },
     )
@@ -105,10 +123,9 @@ async function sendOrderToDiscord(order) {
   const channel = await client.channels.fetch(process.env.CHANNEL_ID);
   const sentMessage = await channel.send({ embeds: [embed], components: [row] });
 
-  // Simpan ID pesan dan channel agar bisa diedit nanti
   order.discordMessageId = sentMessage.id;
   order.discordChannelId = channel.id;
   await order.save();
 }
 
-module.exports = { client, sendOrderToDiscord };
+module.exports = { client, registerBot, sendOrderToDiscord };

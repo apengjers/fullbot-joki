@@ -350,8 +350,8 @@ _Ketik 0 untuk batal dan kembali ke menu_`,
       }
 
       let msgText = `*📦 Riwayat Pesanan Kamu:*
-*Total Pesanan selesai:* Rp. ${orders.filter((o) => o.status === "selesai").reduce((acc, o) => acc + o.totalHarga, 0).toLocaleString()}
-*Pesanan selain berstatus selesai akan hilang dalam 20 menit*\n\n`;
+*💵 Total Pesanan selesai:* Rp. ${orders.filter((o) => o.status === "selesai").reduce((acc, o) => acc + o.totalHarga, 0).toLocaleString()}
+*⚠️ Pesanan selain berstatus selesai akan hilang dalam 20 menit*\n\n`;
       
       for (const o of orders) {
         const satuan = o.jenis === "minigame" ? "P" : (o.jenis || "uang") === "uang" ? "M" : "M";
