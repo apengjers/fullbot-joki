@@ -80,12 +80,13 @@ app.post("/midtrans-webhook", async (req, res) => {
     if (sockGlobal) {
       try {
         await sockGlobal.sendMessage(order.waNumber, {
-          text: `✅ Pembayaran berhasil!\n\n🆔 Order ID: *${order.orderId}*\n📦 Jumlah: *${order.jumlah}M*\n💳 Total: *Rp${order.totalHarga.toLocaleString()}*\n\nPesanan kamu sedang diproses oleh admin. Terima kasih 🙏`,
+          text: `✅ Pembayaran berhasil!\n\n🆔 Order ID: *${order.orderId}*\n📦 Jumlah: *${order.jumlah}${order.jenis === "minigame" ? "P" : "M"}*\n💳 Total: *Rp${order.totalHarga.toLocaleString()}*\n\nPesanan kamu sedang diproses oleh admin. Terima kasih 🙏`,
         });
       } catch (err) {
         console.error("❌ Gagal mengirim WhatsApp:", err);
       }
     }
+
 
     // Kirim notifikasi Bot Discord (embed + tombol)
     try {
