@@ -231,7 +231,10 @@ _Ketik 0 untuk batal dan kembali ke menu_`,
     const jumlah = parseInt(text.replace("m", ""));
     if (!isNaN(jumlah)) {
       if (jumlah <= 0) {
-        return await sock.sendMessage(sender, { text: "❌ Minimal order 1M. Ketik 0 untuk kembali ke menu." });
+        return await sock.sendMessage(sender, { text: `❌ Minimal order 1M. 
+          Masukkan nominal yang sesuai.
+
+          _Ketik 0 untuk kembali ke menu._` });
       }
 
       const hargaPerM = jumlah >= 100 ? hargaDiskon : hargaNormal;
@@ -270,10 +273,15 @@ _Ketik 0 untuk batal dan kembali ke menu_`,
     const jumlah = parseInt(text.replace("p", ""));
     if (!isNaN(jumlah)) {
       if (jumlah < 50) {
-        return await sock.sendMessage(sender, { text: "❌ Minimal order 50 poin. Ketik 0 untuk kembali ke menu." });
-      }
-      if (jumlah % 10 !== 0) {
-        return await sock.sendMessage(sender, { text: "❌ Jumlah poin harus kelipatan 10. Ketik 0 untuk kembali ke menu." });
+        return await sock.sendMessage(sender, { text: `❌ Minimal order 50 poin.
+          Masukkan nominal yang sesuai.
+          
+          _Ketik 0 untuk kembali ke menu._` });
+      } else if (jumlah % 10 !== 0) {
+        return await sock.sendMessage(sender, { text: `❌ Jumlah poin harus kelipatan 10.
+          Masukkan nominal yang sesuai.
+          
+          _Ketik 0 untuk kembali ke menu._` });
       }
 
       const hargaPerPoin = jumlah >= 1000 ? hargaDiskonMG : hargaNormalMG;
@@ -341,7 +349,10 @@ _Ketik 0 untuk batal dan kembali ke menu_`,
         return await sock.sendMessage(sender, { text: "❌ Kamu belum pernah memesan joki." });
       }
 
-      let msgText = "*📦 Riwayat Pesanan Kamu:*\n\n";
+      let msgText = `*📦 Riwayat Pesanan Kamu:*
+      Total Pesanan selesai: Rp. ${orders.filter((o) => o.status === "selesai").reduce((acc, o) => acc + o.totalHarga, 0).toLocaleString()}
+      Pesanan selain berstatus selesai akan hilang dalam 20 menit\n\n`;
+      
       for (const o of orders) {
         const satuan = o.jenis === "minigame" ? "P" : (o.jenis || "uang") === "uang" ? "M" : "M";
         msgText += `🆔 *${o.orderId}*\n👤 Username: ${o.username || "-"}\n💰 ${o.jumlah}${satuan} | Rp${o.totalHarga?.toLocaleString() || 0}\n📌 Status: *${o.status}*\n\n`;
