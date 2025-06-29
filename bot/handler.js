@@ -64,7 +64,7 @@ async function handleMessage(sock, msg) {
   // Anti-spam delay
   const now = Date.now();
   const last = cooldownMap.get(sender) || 0;
-  if (now - last < 1000) return;
+  if (now - last < 100) return;
   cooldownMap.set(sender, now);
 
   // Menu kembali
@@ -190,8 +190,9 @@ ${result.snapUrl}#/gopay-qris
       text: `✅ *Username diterima.*
 
 Sekarang kirimkan *password akun CDID*-mu.
-⚠️ *Pastikan 2FA nonaktif ya agar mempermudah proses login!
-Jika tidak, admin akan segera menghubungi anda saat order diproses*
+⚠️ *Pastikan 2FA nonaktif ya agar mempermudah proses login!*
+Jika aktif, admin akan segera menghubungi anda saat order diproses
+
 _Ketik 0 untuk batal dan kembali ke menu_`,
     });
   }
@@ -216,8 +217,9 @@ _Ketik 0 untuk batal dan kembali ke menu_`,
       text: `✅ *Username diterima.*
 
 Sekarang kirimkan *password akun CDID*-mu.
-⚠️ *Pastikan 2FA nonaktif ya agar mempermudah proses login!
-Jika tidak, admin akan segera menghubungi anda saat order diproses*
+⚠️ *Pastikan 2FA nonaktif ya agar mempermudah proses login!*
+Jika aktif, admin akan segera menghubungi anda saat order diproses
+
 _Ketik 0 untuk batal dan kembali ke menu_`,
     });
   }
