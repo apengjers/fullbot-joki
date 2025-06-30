@@ -1,4 +1,3 @@
-
 require("dotenv").config();
 const {
   Client,
@@ -37,33 +36,30 @@ function registerBot(sock) {
       );
 
       if (!updatedOrder) {
-        const already = await Order.findOne({ orderId });
-        if (!already) {
+        const existing = await Order.findOne({ orderId });
+        if (!existing) {
           return interaction.reply({ content: "❌ Order tidak ditemukan.", ephemeral: true });
         }
-        if (already.status === "selesai") {
-          return interaction.reply({ content: "❌ Order ini sudah ditandai selesai sebelumnya.", ephemeral: true });
+        if (existing.status === "selesai") {
+          return interaction.reply({ content: "❌ Order ini sudah selesai sebelumnya.", ephemeral: true });
         }
-        return interaction.reply({ content: `❌ Order sudah dikerjakan oleh ${already.worker}`, ephemeral: true });
+        return interaction.reply({ content: `❌ Order sudah dikerjakan oleh ${existing.worker}.`, ephemeral: true });
       }
 
       try {
         const channel = await client.channels.fetch(updatedOrder.discordChannelId);
         const msg = await channel.messages.fetch(updatedOrder.discordMessageId);
-
         const embed = EmbedBuilder.from(msg.embeds[0]);
-        const newFields = embed.data.fields.map(field => {
+
+        embed.data.fields.forEach(field => {
           if (field.name === "👨‍💻 Dikerjakan oleh") {
-            return { ...field, value: updatedOrder.worker };
+            field.value = updatedOrder.worker;
           }
-          return field;
         });
 
-        embed.setFields(newFields);
         await msg.edit({ embeds: [embed] });
-
         return interaction.reply({
-          content: `✅ Kamu sekarang mengambil order ini sebagai ${updatedOrder.worker}.`,
+          content: `✅ Kamu sekarang mengambil order ini sebagai **${updatedOrder.worker}**.`,
           ephemeral: true,
         });
       } catch (err) {
@@ -90,26 +86,26 @@ function registerBot(sock) {
 
       order.status = "selesai";
       await order.save();
-
-      notifyCustomer(sock, order); // WHATSAPP NOTIFIKASI SELESAI KEMBALI DI SINI
+      notifyCustomer(sock, order); // Kirim notifikasi WhatsApp
 
       try {
         const channel = await client.channels.fetch(order.discordChannelId);
         const msg = await channel.messages.fetch(order.discordMessageId);
-
         const embed = EmbedBuilder.from(msg.embeds[0]);
-        const newFields = embed.data.fields.map(field => {
+
+        embed.data.fields.forEach(field => {
           if (field.name === "📦 Status") {
-            return { ...field, value: "✔ Selesai" };
+            field.value = "✔ Selesai";
           }
-          return field;
+          if (field.name === "👨‍💻 Dikerjakan oleh") {
+            field.value = order.worker || "-";
+          }
         });
 
-        embed.setFields(newFields);
         await msg.edit({ embeds: [embed] });
 
         return interaction.reply({
-          content: "✅ Order berhasil ditandai sebagai selesai.",
+          content: `✅ Order berhasil ditandai sebagai selesai oleh **${order.worker || "unknown"}**.`,
           ephemeral: true,
         });
       } catch (err) {
@@ -133,10 +129,11 @@ async function sendOrderToDiscord(order) {
       {
         name: "📱 WA",
         value: order.waNumber
-          ? `[Klik untuk chat](https://wa.me/${order.waNumber.replace("@s.whatsapp.net", "")})`
+          ? `[Klik untuk chat](https://wa.me/${order.waNumber.replace("@s.whatsapp.net", "")}?text=${encodeURIComponent(`Halo kak, perkenalkan saya dari team joki Apengjers yang akan memproses orderan kakak dengan order ID ${order.orderId}`)})`
           : "-",
         inline: true,
       },
+
       {
         name: "🔢 Jumlah",
         value: `${order.jumlah}${order.jenis === "minigame" ? "P" : "M"}`,
@@ -144,11 +141,7 @@ async function sendOrderToDiscord(order) {
       },
       { name: "💳 Total", value: `Rp${order.totalHarga.toLocaleString()}`, inline: true },
       { name: "📦 Status", value: order.status, inline: true },
-      {
-        name: "👨‍💻 Dikerjakan oleh",
-        value: order.worker || "-",
-        inline: true,
-      }
+      { name: "👨‍💻 Dikerjakan oleh", value: order.worker || "-", inline: true }
     )
     .setColor(0x57f287)
     .setTimestamp();
@@ -158,7 +151,6 @@ async function sendOrderToDiscord(order) {
       .setCustomId(`kerjakan_${order.orderId}`)
       .setLabel("Kerjakan Saya")
       .setStyle(ButtonStyle.Primary),
-
     new ButtonBuilder()
       .setCustomId(`selesai_${order.orderId}`)
       .setLabel("Tandai Selesai")
@@ -166,7 +158,6 @@ async function sendOrderToDiscord(order) {
   );
 
   const channel = await client.channels.fetch(process.env.CHANNEL_ID);
-
   const sentMessage = await channel.send({
     content: "@everyone",
     embeds: [embed],
