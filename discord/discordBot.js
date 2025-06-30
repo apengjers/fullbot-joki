@@ -28,49 +28,42 @@ function registerBot(sock) {
     if (!interaction.isButton()) return;
 
     const [action, orderId] = interaction.customId.split("_");
-    const order = await Order.findOne({ orderId });
-    if (!order) {
-      return interaction.reply({ content: "❌ Order tidak ditemukan.", ephemeral: true });
-    }
 
-    // Hindari aksi apapun jika sudah selesai
-    if (order.status === "selesai") {
-      return interaction.reply({
-        content: "❌ Order ini sudah ditandai selesai sebelumnya.",
-        ephemeral: true,
-      });
-    }
-
-    // === tombol "Kerjakan Saya" ===
     if (action === "kerjakan") {
-      if (order.worker) {
-        return interaction.reply({
-          content: `❌ Order sudah dikerjakan oleh ${order.worker}`,
-          ephemeral: true,
-        });
+      const updatedOrder = await Order.findOneAndUpdate(
+        { orderId, worker: null, status: { $ne: "selesai" } },
+        { worker: interaction.user.username },
+        { new: true }
+      );
+
+      if (!updatedOrder) {
+        const already = await Order.findOne({ orderId });
+        if (!already) {
+          return interaction.reply({ content: "❌ Order tidak ditemukan.", ephemeral: true });
+        }
+        if (already.status === "selesai") {
+          return interaction.reply({ content: "❌ Order ini sudah ditandai selesai sebelumnya.", ephemeral: true });
+        }
+        return interaction.reply({ content: `❌ Order sudah dikerjakan oleh ${already.worker}`, ephemeral: true });
       }
 
-      order.worker = interaction.user.username;
-      await order.save();
-
       try {
-        const channel = await client.channels.fetch(order.discordChannelId);
-        const msg = await channel.messages.fetch(order.discordMessageId);
+        const channel = await client.channels.fetch(updatedOrder.discordChannelId);
+        const msg = await channel.messages.fetch(updatedOrder.discordMessageId);
 
         const embed = EmbedBuilder.from(msg.embeds[0]);
         const newFields = embed.data.fields.map(field => {
           if (field.name === "👨‍💻 Dikerjakan oleh") {
-            return { ...field, value: order.worker };
+            return { ...field, value: updatedOrder.worker };
           }
           return field;
         });
 
         embed.setFields(newFields);
-
         await msg.edit({ embeds: [embed] });
 
         return interaction.reply({
-          content: `✅ Kamu sekarang mengambil order ini sebagai ${order.worker}.`,
+          content: `✅ Kamu sekarang mengambil order ini sebagai ${updatedOrder.worker}.`,
           ephemeral: true,
         });
       } catch (err) {
@@ -82,13 +75,23 @@ function registerBot(sock) {
       }
     }
 
-    // === tombol "Tandai Selesai" ===
     if (action === "selesai") {
+      const order = await Order.findOne({ orderId });
+      if (!order) {
+        return interaction.reply({ content: "❌ Order tidak ditemukan.", ephemeral: true });
+      }
+
+      if (order.status === "selesai") {
+        return interaction.reply({
+          content: "❌ Order ini sudah ditandai selesai sebelumnya.",
+          ephemeral: true,
+        });
+      }
+
       order.status = "selesai";
       await order.save();
 
-      // kirim notifikasi WA
-      notifyCustomer(sock, order);
+      notifyCustomer(sock, order); // WHATSAPP NOTIFIKASI SELESAI KEMBALI DI SINI
 
       try {
         const channel = await client.channels.fetch(order.discordChannelId);
@@ -103,7 +106,6 @@ function registerBot(sock) {
         });
 
         embed.setFields(newFields);
-
         await msg.edit({ embeds: [embed] });
 
         return interaction.reply({
