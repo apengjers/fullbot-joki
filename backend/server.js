@@ -151,6 +151,10 @@ app.put("/api/orders/:id", async (req, res) => {
   }
 });
 
+app.get("/thanks", (req, res) => {
+  res.sendFile(__dirname + "/thanks.html");
+});
+
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`✅ Webhook server listening on port ${PORT}`);
