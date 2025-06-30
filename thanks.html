@@ -8,22 +8,45 @@
   <style>
     .fade-in {
       opacity: 0;
+      transform: translateY(30px);
       animation: fadeIn 1s forwards;
     }
     @keyframes fadeIn {
-      to { opacity: 1; }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .anime-float {
+      animation: floaty 3s ease-in-out infinite;
+    }
+    @keyframes floaty {
+      0% { transform: translateY(0); }
+      50% { transform: translateY(-10px); }
+      100% { transform: translateY(0); }
     }
   </style>
 </head>
-<body class="bg-gray-100 flex items-center justify-center h-screen">
-  <div class="bg-white shadow-lg rounded-xl p-8 max-w-md text-center fade-in">
-    <div class="text-green-600 text-6xl mb-4">✅</div>
-    <h1 class="text-2xl font-bold mb-2">Pembayaran Berhasil!</h1>
-    <p class="text-gray-700 mb-4">Terima kasih, pesanan kamu sedang diproses oleh admin.</p>
-    <p class="text-gray-600">Admin akan segera menghubungi kamu lewat WhatsApp.</p>
-    <a href="https://wa.me/6282113784080" class="mt-6 inline-block bg-green-600 hover:bg-green-700 text-white font-semibold py-2 px-4 rounded shadow transition">
-      Chat Admin Sekarang
-    </a>
+<body class="bg-gradient-to-br from-pink-200 to-purple-300 flex items-center justify-center min-h-screen p-4">
+  <div class="fade-in bg-white/80 rounded-2xl p-0 max-w-md text-center shadow-xl">
+    <!-- Area blur khusus gambar -->
+    <div class="backdrop-blur-md bg-white/30 rounded-t-2xl p-6">
+      <img 
+        src="https://i.imgur.com/pxVQdBs.jpeg" 
+        alt="Anime Girl" 
+        class="w-32 h-32 rounded-full mx-auto border-4 border-pink-400 anime-float"
+      />
+    </div>
+
+    <!-- Area teks tanpa blur -->
+    <div class="p-6">
+      <h1 class="text-3xl font-bold text-pink-700 mb-2">Pembayaran Berhasil!</h1>
+      <p class="text-gray-800 mb-2">Terima kasih, pesanan kamu sedang diproses oleh admin.</p>
+      <p class="text-gray-800 mb-4">Admin akan segera menghubungi kamu lewat WhatsApp.</p>
+      <a 
+        href="https://wa.me/6282113784080" 
+        class="mt-4 inline-block bg-pink-600 hover:bg-pink-700 text-white font-semibold py-2 px-4 rounded shadow transition"
+      >
+        Chat Admin Sekarang
+      </a>
+    </div>
   </div>
 </body>
 </html>
