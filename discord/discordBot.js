@@ -1,3 +1,4 @@
+
 require("dotenv").config();
 const {
   Client,
@@ -30,6 +31,14 @@ function registerBot(sock) {
     const order = await Order.findOne({ orderId });
     if (!order) {
       return interaction.reply({ content: "❌ Order tidak ditemukan.", ephemeral: true });
+    }
+
+    // Hindari aksi apapun jika sudah selesai
+    if (order.status === "selesai") {
+      return interaction.reply({
+        content: "❌ Order ini sudah ditandai selesai sebelumnya.",
+        ephemeral: true,
+      });
     }
 
     // === tombol "Kerjakan Saya" ===
@@ -75,13 +84,6 @@ function registerBot(sock) {
 
     // === tombol "Tandai Selesai" ===
     if (action === "selesai") {
-      if (order.status === "selesai") {
-        return interaction.reply({
-          content: "❌ Order ini sudah ditandai selesai sebelumnya.",
-          ephemeral: true,
-        });
-      }
-
       order.status = "selesai";
       await order.save();
 
@@ -163,7 +165,6 @@ async function sendOrderToDiscord(order) {
 
   const channel = await client.channels.fetch(process.env.CHANNEL_ID);
 
-  // ini mention beneran everyone
   const sentMessage = await channel.send({
     content: "@everyone",
     embeds: [embed],

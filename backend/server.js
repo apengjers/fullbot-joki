@@ -11,6 +11,7 @@ const { sendOrderToDiscord } = require("../discord/discordBot"); // 👈 Tambaha
 
 app.use(cors());
 app.use(express.json());
+app.use(express.static("public")); // tambahkan ini
 
 // ✅ Koneksi MongoDB
 mongoose.connect(process.env.MONGODB_URI, {
@@ -152,8 +153,9 @@ app.put("/api/orders/:id", async (req, res) => {
 });
 
 app.get("/thanks", (req, res) => {
-  res.sendFile(__dirname + "/../thanks.html")
+  res.redirect("/thanks.html" + req.url.slice(7));
 });
+
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
