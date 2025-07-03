@@ -8,7 +8,7 @@ require("dotenv").config();
 const axios = require("axios");
 const Order = require("./models/Order");
 const { sendOrderToDiscord } = require("../discord/discordBot");
-const { router: tripayCallback, setSock } = require("./backend/routes/tripayCallback");
+const { router: tripayCallback, setSock } = require("../routes/tripayCallback");
 
 app.use(cors());
 app.use(express.json());
