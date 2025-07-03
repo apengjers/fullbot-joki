@@ -338,7 +338,8 @@ _Ketik 0 untuk batal dan kembali ke menu_`,
   if (session?.state === "hitung_estimasi") {
     const nominal = parseInt(text);
     if (!isNaN(nominal)) {
-      const estimasi = (nominal + (nominal * 0.10)) / 3; // hasil estimasi dalam menit (float)
+      const jam = (nominal + (nominal * 0.10)) / 3;
+      const estimasi = jam * 60; // hasil dalam menit
 
       function formatEstimasi(menit) {
         const j = Math.floor(menit / 60);
@@ -360,15 +361,14 @@ _Ketik 0 untuk batal dan kembali ke menu_`,
     }
   }
 
-// Tambahan handler agar bisa lanjut ke state berikutnya
-if (text === "1" && session?.state === "hitung_estimasi") {
-  setSession(sender, { state: "awaiting_jumlah" });
-  return await sock.sendMessage(sender, {
-    text: listJoki
-  });
-}
 
-
+  // Tambahan handler agar bisa lanjut ke state berikutnya
+  if (text === "1" && session?.state === "hitung_estimasi") {
+    setSession(sender, { state: "awaiting_jumlah" });
+    return await sock.sendMessage(sender, {
+      text: listJoki
+    });
+  }
 
   // ==============================
   // MENU UTAMA (HANYA JIKA TIDAK DALAM SESI)
