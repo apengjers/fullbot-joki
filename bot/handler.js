@@ -348,12 +348,17 @@ _Ketik 0 untuk batal dan kembali ke menu_`,
       if (orders.length === 0) {
         return await sock.sendMessage(sender, { text: "❌ Kamu belum pernah memesan joki." });
       }
-      const totalHarga = { total: orders.filter((o) => o.status === "selesai").reduce((acc, o) => acc + o.totalHarga, 0).toLocaleString()};
-      const totalCashback= (totalHarga * 0.01) / 1000;
-      let msgText = `*📦 Riwayat Pesanan Kamu:*
-*💵 Total Pesanan selesai: Rp. ${totalHarga}
-*⚠️ Pesanan selain berstatus selesai akan hilang dalam 20 menit*
-*🤑 Estimasi Cashback : ${totalCashback}M*\n\n`;
+
+      const totalHarga = orders
+        .filter(o => o.status === "selesai")
+        .reduce((acc, o) => acc + o.totalHarga, 0);
+
+      const totalCashback = (totalHarga * 0.01) / 1000;
+
+      let msgText = `*📦 Riwayat Pesanan Kamu:*\n` +
+                    `*💵 Total Pesanan selesai: Rp. ${totalHarga.toLocaleString()}*\n` +
+                    `*⚠️ Pesanan selain berstatus selesai akan hilang dalam 20 menit*\n` +
+                    `*🤑 Estimasi Cashback : ${totalCashback.toFixed(2)}M*\n\n`;
       
       for (const o of orders) {
         const satuan = o.jenis === "minigame" ? "P" : (o.jenis || "uang") === "uang" ? "M" : "M";
