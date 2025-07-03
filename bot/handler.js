@@ -13,7 +13,8 @@ const menuUtama = `👋 *Selamat datang di layanan Joki CDID!*
 Silakan pilih menu:
 1️⃣ Joki CDID
 2️⃣ Cek Pesanan
-3️⃣ Hubungi Admin
+3️⃣ Hitung Estimasi
+4️⃣ Hubungi Admin
 
 *Ketik angka pilihanmu.* (Ketik 0 kapan saja untuk kembali ke menu utama)
 `;
@@ -333,6 +334,18 @@ _Ketik 0 untuk batal dan kembali ke menu_`,
     }
   }
 
+  // STATE HITUNG_ESTIMASI
+  if (session?.state === "hitung_estimasi") {
+    const nominal = parseInt(text);
+    if (!isNaN(nominal)) {
+      const jam = Math.ceil(nominal / 3);
+      const estimasi = jam * 60;
+      return await sock.sendMessage(sender, { text: `Estimasi proses: ${estimasi} Menit` });
+    } else {
+      return await sock.sendMessage(sender, { text: "❌ Format jumlah tidak dikenali. Contoh: 1000" });
+    }
+  }
+
   // ==============================
   // MENU UTAMA (HANYA JIKA TIDAK DALAM SESI)
   // ==============================
@@ -371,7 +384,14 @@ _Ketik 0 untuk kembali ke menu utama._`;
       return await sock.sendMessage(sender, { text: msgText });
     }
 
-    if (text === "3" || text.includes("admin")) {
+    if (text === "3" || text.includes("etimasi")) {
+      setSession(sender, { state: "hitung_estimasi" });
+      return await sock.sendMessage(sender, { 
+        text: `Masukkan nominal uang yang ingin dihitung estimasi prosesnya`
+       });
+
+    }
+    if (text === "4" || text.includes("admin")) {
       return await sock.sendMessage(sender, {
         text: "📞 Hubungi admin via WhatsApp:\nhttps://wa.me/6282113780480\n📱 Discord:\nhttps://discord.gg/A98JsvGZ"
       });
