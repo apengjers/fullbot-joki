@@ -338,30 +338,36 @@ _Ketik 0 untuk batal dan kembali ke menu_`,
   if (session?.state === "hitung_estimasi") {
     const nominal = parseInt(text);
     if (!isNaN(nominal)) {
-      const jam = Math.ceil((nominal + (nominal*0.10)) / 3);
-      const estimasi = jam * 60;
+      const estimasi = (nominal + (nominal * 0.10)) / 3; // hasil estimasi dalam menit (float)
 
-      // Tambahkan fungsi kecil untuk ubah ke format jam-menit
       function formatEstimasi(menit) {
         const j = Math.floor(menit / 60);
-        const m = menit % 60;
+        const m = Math.round(menit % 60);
         return `${j > 0 ? j + " Jam" : ""}${j > 0 && m > 0 ? " " : ""}${m > 0 ? m + " Menit" : ""}`;
       }
 
       return await sock.sendMessage(sender, {
         text: `🧭 Estimasi proses: ${formatEstimasi(estimasi)}\n` +
               `🚗 Estimasi selesai: ${new Date(Date.now() + estimasi * 60000).toLocaleString()}\n` +
-              `📌 *Catatan: Estimasi jika ada gamepas +50% Job bisa lebih cepat*\n\n` +
+              `📌 *Catatan: Estimasi jika ada gamepass +50% Job bisa lebih cepat*\n\n` +
               `_Ketik 1 untuk langsung order._\n` +
               `_Ketik 0 untuk kembali ke menu._`
       });
-
     } else {
       return await sock.sendMessage(sender, {
         text: "❌ Format jumlah tidak dikenali. Contoh: 1000"
       });
     }
   }
+
+// Tambahan handler agar bisa lanjut ke state berikutnya
+if (text === "1" && session?.state === "hitung_estimasi") {
+  setSession(sender, { state: "awaiting_jumlah" });
+  return await sock.sendMessage(sender, {
+    text: listJoki
+  });
+}
+
 
 
   // ==============================
