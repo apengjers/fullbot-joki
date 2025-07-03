@@ -351,7 +351,8 @@ _Ketik 0 untuk batal dan kembali ke menu_`,
       return await sock.sendMessage(sender, {
         text: `🧭 Estimasi proses: ${formatEstimasi(estimasi)}\n` +
               `🚗 Estimasi selesai: ${new Date(Date.now() + estimasi * 60000).toLocaleString()}\n\n` +
-              `*Ketik 1 untuk langsung order.*\n` +
+              `📌 *Catatan: Estimasi jika ada gamepas +50% Job bisa lebih cepat*` +
+              `_Ketik 1 untuk langsung order._` +
               `_Ketik 0 untuk kembali ke menu._`
       });
 
