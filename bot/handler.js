@@ -333,7 +333,15 @@ _Ketik 0 untuk batal dan kembali ke menu_`,
         await sock.sendMessage(sender, { text: "❌ Pilihan tidak dikenali. Ketik 0 untuk kembali ke menu utama." });
     }
   }
-
+  
+  // Tambahan handler agar bisa lanjut ke state berikutnya
+  if (text === "1" && session?.state === "hitung_estimasi") {
+    setSession(sender, { state: "awaiting_jumlah" });
+    return await sock.sendMessage(sender, {
+      text: listJoki
+    });
+  }
+  
   // STATE HITUNG_ESTIMASI
   if (session?.state === "hitung_estimasi") {
     const nominal = parseInt(text);
@@ -362,13 +370,6 @@ _Ketik 0 untuk batal dan kembali ke menu_`,
   }
 
 
-  // Tambahan handler agar bisa lanjut ke state berikutnya
-  if (text === "1" && session?.state === "hitung_estimasi") {
-    setSession(sender, { state: "awaiting_jumlah" });
-    return await sock.sendMessage(sender, {
-      text: listJoki
-    });
-  }
 
   // ==============================
   // MENU UTAMA (HANYA JIKA TIDAK DALAM SESI)
