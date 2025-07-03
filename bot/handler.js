@@ -338,7 +338,7 @@ _Ketik 0 untuk batal dan kembali ke menu_`,
   if (session?.state === "hitung_estimasi") {
     const nominal = parseInt(text);
     if (!isNaN(nominal)) {
-      const jam = Math.ceil(nominal / 3);
+      const jam = Math.ceil((nominal + (nominal*0.10)) / 3);
       const estimasi = jam * 60;
 
       // Tambahkan fungsi kecil untuk ubah ke format jam-menit
@@ -350,9 +350,9 @@ _Ketik 0 untuk batal dan kembali ke menu_`,
 
       return await sock.sendMessage(sender, {
         text: `🧭 Estimasi proses: ${formatEstimasi(estimasi)}\n` +
-              `🚗 Estimasi selesai: ${new Date(Date.now() + estimasi * 60000).toLocaleString()}\n\n` +
-              `📌 *Catatan: Estimasi jika ada gamepas +50% Job bisa lebih cepat*` +
-              `_Ketik 1 untuk langsung order._` +
+              `🚗 Estimasi selesai: ${new Date(Date.now() + estimasi * 60000).toLocaleString()}\n` +
+              `📌 *Catatan: Estimasi jika ada gamepas +50% Job bisa lebih cepat*\n\n` +
+              `_Ketik 1 untuk langsung order._\n` +
               `_Ketik 0 untuk kembali ke menu._`
       });
 
