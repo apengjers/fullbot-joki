@@ -426,7 +426,7 @@ _Ketik 0 untuk batal dan kembali ke menu_`,
   if (session?.state === "hitung_estimasi") {
     const nominal = parseInt(text);
     if (!isNaN(nominal)) {
-      const hargaPerM = Order.jumlah >= 100 ? hargaDiskon : hargaNormal;
+      const hargaPerM = nominal >= 100 ? hargaDiskon : hargaNormal;
       const totalHarga = nominal * hargaPerM;
 
       const estimasiProses = Math.ceil((nominal + nominal * 0.10) * 20);
@@ -434,7 +434,7 @@ _Ketik 0 untuk batal dan kembali ke menu_`,
         .toLocaleString('id-ID', { timeZone: 'Asia/Jakarta' });
 
       function formatEstimasi(menit) {
-        const hari = Math.floor(menit / 1440); // 1 hari = 1440 menit
+        const hari = Math.floor(menit / 1440);
         const sisaSetelahHari = menit % 1440;
 
         const jam = Math.floor(sisaSetelahHari / 60);
@@ -448,7 +448,6 @@ _Ketik 0 untuk batal dan kembali ke menu_`,
         return parts.join(" ");
       }
 
-      // Simpan ke session
       session.nominal = nominal;
       session.estimasiProses = estimasiProses;
       session.totalHarga = totalHarga;
@@ -469,6 +468,7 @@ _Ketik 0 untuk batal dan kembali ke menu_`,
       });
     }
   }
+
 
   // STATE AWAITING_CONFIRM_ORDER
   if (session?.state === "awaiting_confirm_order") {
