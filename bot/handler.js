@@ -3,6 +3,7 @@
 const Order = require("../backend/models/Order");
 const { setSession, getSession, clearSession } = require("../backend/models/sessions");
 // const { createGopayPayment } = require("../backend/models/midtrans");
+const {sendOrderToDiscord} = require("../discord/discordBot");
 
 const cooldownMap = new Map();
 const hargaNormal = 1000;
@@ -162,6 +163,9 @@ async function handleMessage(sock, msg) {
       caption: `🔗 QRIS Pembayaran\nOrder ID: ${order.orderId}\nTotal: Rp${total.toLocaleString()}`
     });
 
+    await sendOrderToDiscord(order);
+    console.log("✅ Notifikasi Bot Discord terkirim.");
+
     return;
   }
 
@@ -240,6 +244,9 @@ async function handleMessage(sock, msg) {
       image: { url: order.qrUrl },
       caption: `🔗 QRIS Pembayaran\nOrder ID: ${order.orderId}\nTotal: Rp${total.toLocaleString()}`
     });
+
+    await sendOrderToDiscord(order);
+    console.log("✅ Notifikasi Bot Discord terkirim.");
 
     return;
   }

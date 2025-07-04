@@ -28,6 +28,49 @@ function registerBot(sock) {
 
     const [action, orderId] = interaction.customId.split("_");
 
+    if (action === "pembayaran") {
+      const order = await Order.findOne({ orderId });
+
+      if (!order) {
+        return interaction.reply({ content: "❌ Order tidak ditemukan.", ephemeral: true });
+      }
+
+      if (order.status === "menunggu_pembayaran_manual") {
+        order.status = "pembayaran_diterima";
+        await order.save();
+
+        try {
+          const channel = await client.channels.fetch(order.discordChannelId);
+          const msg = await channel.messages.fetch(order.discordMessageId);
+          const embed = EmbedBuilder.from(msg.embeds[0]);
+
+          embed.data.fields.forEach(field => {
+            if (field.name === "📦 Status") {
+              field.value = "💰 Pembayaran Diterima";
+            }
+          });
+
+          await msg.edit({ embeds: [embed] });
+
+          return interaction.reply({
+            content: `✅ Status order *${order.orderId}* diupdate: 💰 Pembayaran Diterima.`,
+            ephemeral: true,
+          });
+        } catch (err) {
+          console.error("❌ Gagal update pesan Discord:", err);
+          return interaction.reply({
+            content: "❌ Gagal update pesan Discord.",
+            ephemeral: true,
+          });
+        }
+      } else {
+        return interaction.reply({
+          content: `⚠️ Order ini sudah diupdate ke status: *${order.status}*`,
+          ephemeral: true,
+        });
+      }
+    }
+
     if (action === "kerjakan") {
       const order = await Order.findOne({ orderId });
 
@@ -78,7 +121,6 @@ function registerBot(sock) {
         });
       }
     }
-
 
     if (action === "selesai") {
       const order = await Order.findOne({ orderId });
@@ -157,6 +199,10 @@ async function sendOrderToDiscord(order) {
     .setTimestamp();
 
   const row = new ActionRowBuilder().addComponents(
+    new ButtonBuilder()
+    .setCustomId(`pembayaran_${order.orderId}`) // ✅ Button Baru
+    .setLabel("Pembayaran Diterima")
+    .setStyle(ButtonStyle.Secondary),
     new ButtonBuilder()
       .setCustomId(`kerjakan_${order.orderId}`)
       .setLabel("Kerjakan Saya")
