@@ -143,8 +143,6 @@ async function handleMessage(sock, msg) {
     order.status = "menunggu_pembayaran_manual";
     order.totalHarga = total;
     order.kodeUnik = kodeUnik;
-    order.estimasiProses = estimasi; // menit
-    order.estimasiSelesai = new Date(Date.now() + estimasi * 60000);
     order.qrUrl = 'https://fullbot-joki-production.up.railway.app/qris.jpg'; // ✅ link QRIS kamu
     await order.save(); 
 

@@ -21,9 +21,7 @@ const orderSchema = new mongoose.Schema({
   type: String,
   enum: ["uang", "minigame"],
   default: "uang" 
-  },
-  estimasiProses: Number, // dalam menit
-  estimasiSelesai: Date,  // waktu lengkap kapan estimasi selesai
+  }
 }, {
   timestamps: true // ✅ wajib biar bisa pakai .sort({ createdAt: -1 })
 });

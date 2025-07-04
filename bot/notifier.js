@@ -18,22 +18,20 @@ async function notifyPaymentReceived(sock, order) {
       ? order.waNumber
       : `${order.waNumber}@s.whatsapp.net`;
 
-    // Format waktu estimasi selesai
-    const estimasiSelesaiFormatted = new Date(order.estimasiSelesai).toLocaleString('id-ID', {
-      timeZone: 'Asia/Jakarta',
-    });
+    // Hitung estimasi proses dan selesai
+    const estimasiProses = Math.ceil((order.jumlah + (order.jumlah * 0.10)) / 3);
+    const estimasiSelesai = new Date(Date.now() + estimasiProses * 60000)
+      .toLocaleString('id-ID', { timeZone: 'Asia/Jakarta' });
 
     const message = `✅ *Pembayaran untuk Order ${order.orderId} sudah diterima!*\n\n` +
+      `Halo kak, joki sudah mulai diproses ya kak 🙏\n` +
       `📦 Jumlah: *${order.jumlah}${order.jenis === "minigame" ? "P" : "M"}*\n` +
       `💳 Total: *Rp${order.totalHarga.toLocaleString()}*\n\n` +
-      `Estimasi Proses: *${order.estimasiProses} menit*\n` +
-      `Halo kak, joki sudah mulai diproses ya kak 🙏
-Estimasi selesai: *${order.estimasiSelesaiFormatted}*
-Selama proses berlangsung mohon jangan ditabrak/dimainkan dulu akunnya agar tidak mengganggu proses 🙏
-Estimasi tersebut sudah termasuk bonus uangnya juga ya kak 💸
-Mohon ditunggu dan terima kasih atas kepercayaannya 😊` +
-      
-      `Terima kasih sudah menggunakan layanan kami.`;
+      `🧭 Estimasi proses: *${estimasiProses} menit*\n` +
+      `🚗 Estimasi selesai: *${estimasiSelesai}*\n\n` +
+      `Selama proses berlangsung *mohon jangan ditabrak/dimainkan dulu akunnya* agar tidak mengganggu proses 🙏\n\n` +
+      `*Estimasi tersebut sudah termasuk bonus uangnya juga ya kak 💸*\n\n` +
+      `Mohon ditunggu dan *terima kasih atas kepercayaannya* 😊`;
 
     console.log("📤 Kirim WA ke:", waId);
     console.log("📨 Pesan:", message);
@@ -45,7 +43,6 @@ Mohon ditunggu dan terima kasih atas kepercayaannya 😊` +
     console.error("❌ Gagal kirim notifikasi pembayaran:", e);
   }
 }
-
 
 
 module.exports = {
