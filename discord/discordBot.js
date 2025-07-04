@@ -105,20 +105,16 @@ function registerBot(sock) {
           ephemeral: true,
         });
       }
-
       try {
         const channel = await client.channels.fetch(order.discordChannelId);
         const msg = await channel.messages.fetch(order.discordMessageId);
         const embed = EmbedBuilder.from(msg.embeds[0]);
-
         embed.data.fields.forEach(field => {
           if (field.name === "👨‍💻 Dikerjakan oleh") {
             field.value = order.worker;
           }
         });
-
         await msg.edit({ embeds: [embed] });
-
         return interaction.reply({
           content: `✅ Kamu sekarang mengambil order ini sebagai **${order.worker}**.`,
           ephemeral: true,

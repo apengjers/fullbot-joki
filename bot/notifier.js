@@ -13,11 +13,20 @@ async function notifyCustomer(sock, order) {
 }
 
 function formatEstimasi(menit) {
-  const hari = Math.floor(menit / 1440);
-  const jam = Math.floor(menit / 60);
-  const sisaMenit = menit % 60;
-  return `${hari > 0 ? `${hari} Hari` : ""}${hari > 0 && jam > 0 ? " " : ""}${jam > 0 ? `${jam} Jam` : ""}${jam > 0 && sisaMenit > 0 ? " " : ""}${sisaMenit > 0 ? `${sisaMenit} Menit` : ""}`;
+  const hari = Math.floor(menit / 1440); // 1 hari = 1440 menit
+  const sisaSetelahHari = menit % 1440;
+
+  const jam = Math.floor(sisaSetelahHari / 60);
+  const sisaMenit = sisaSetelahHari % 60;
+
+  const parts = [];
+  if (hari > 0) parts.push(`${hari} Hari`);
+  if (jam > 0) parts.push(`${jam} Jam`);
+  if (sisaMenit > 0) parts.push(`${sisaMenit} Menit`);
+
+  return parts.join(" ");
 }
+
 
 async function notifyPaymentReceived(sock, order) {
   try {

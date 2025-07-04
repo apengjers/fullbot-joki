@@ -434,10 +434,18 @@ _Ketik 0 untuk batal dan kembali ke menu_`,
         .toLocaleString('id-ID', { timeZone: 'Asia/Jakarta' });
 
       function formatEstimasi(menit) {
-        const h = Math.floor(jam / 24);
-        const j = Math.floor(menit / 60);
-        const m = menit % 60;
-        return `${h > 0 ? h + " Hari" : ""}${h > 0 && j > 0 ? " " : ""}${j > 0 ? j + " Jam" : ""}${j > 0 && m > 0 ? " " : ""}${m > 0 ? m + " Menit" : ""}`;
+        const hari = Math.floor(menit / 1440); // 1 hari = 1440 menit
+        const sisaSetelahHari = menit % 1440;
+
+        const jam = Math.floor(sisaSetelahHari / 60);
+        const sisaMenit = sisaSetelahHari % 60;
+
+        const parts = [];
+        if (hari > 0) parts.push(`${hari} Hari`);
+        if (jam > 0) parts.push(`${jam} Jam`);
+        if (sisaMenit > 0) parts.push(`${sisaMenit} Menit`);
+
+        return parts.join(" ");
       }
 
       // Simpan ke session
