@@ -11,7 +11,7 @@ const {
 } = require("discord.js");
 const mongoose = require("mongoose");
 const Order = require("../backend/models/Order");
-const { notifyCustomer } = require("../bot/notifier");
+const { notifyCustomer } = require("../bot/notifier"); // ⬅ gunakan destructuring
 
 const client = new Client({
   intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages, GatewayIntentBits.MessageContent],
@@ -38,7 +38,7 @@ function registerBot(sock) {
       if (order.status === "menunggu_pembayaran_manual") {
         order.status = "pembayaran_diterima";
         await order.save();
-        await notifier.notifyCustomer(sock, order);
+        await notifyPaymentReceived(sock, order);
 
         try {
           const channel = await client.channels.fetch(order.discordChannelId);
@@ -139,7 +139,7 @@ function registerBot(sock) {
 
       order.status = "selesai";
       await order.save();
-      await notifier.notifyCustomer(sock, order); // Kirim notifikasi WhatsApp ke customer
+      await notifyCustomer(sock, order);
 
       try {
         const channel = await client.channels.fetch(order.discordChannelId);
