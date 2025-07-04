@@ -142,7 +142,7 @@ async function handleMessage(sock, msg) {
     order.status = "menunggu_pembayaran_manual";
     order.totalHarga = total;
     order.kodeUnik = kodeUnik;
-    order.qrUrl = 'http:localhost:3000/qris.jpg'; // ✅ link QRIS kamu
+    order.qrUrl = 'https://fullbot-joki-production.up.railway.app/qris.jpg'; // ✅ link QRIS kamu
     await order.save(); 
 
     clearSession(sender);
@@ -227,7 +227,7 @@ async function handleMessage(sock, msg) {
     order.status = "menunggu_pembayaran_manual";
     order.totalHarga = total;
     order.kodeUnik = kodeUnik;
-    order.qrUrl = 'http:localhost:3000/qris.jpg';
+    order.qrUrl = 'https://fullbot-joki-production.up.railway.app/qris.jpg';
     await order.save();
 
     clearSession(sender);

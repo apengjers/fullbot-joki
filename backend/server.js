@@ -4,7 +4,6 @@ const cors = require("cors");
 const crypto = require("crypto");
 const mongoose = require("mongoose");
 require("dotenv").config();
-
 const axios = require("axios");
 const Order = require("./models/Order");
 const { sendOrderToDiscord } = require("../discord/discordBot"); // 👈 Tambahan penting
