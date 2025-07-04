@@ -426,28 +426,62 @@ _Ketik 0 untuk batal dan kembali ke menu_`,
   if (session?.state === "hitung_estimasi") {
     const nominal = parseInt(text);
     if (!isNaN(nominal)) {
-      const jam = (nominal + (nominal * 0.10)) / 3;
-      const estimasi = jam * 60; // hasil dalam menit
+      const hargaPerM = 1000;
+      const totalHarga = nominal * hargaPerM;
+
+      const estimasiProses = Math.ceil((nominal + nominal * 0.10) * 20);
+      const selesai = new Date(Date.now() + estimasiProses * 60000)
+        .toLocaleString('id-ID', { timeZone: 'Asia/Jakarta' });
 
       function formatEstimasi(menit) {
         const j = Math.floor(menit / 60);
-        const m = Math.round(menit % 60);
+        const m = menit % 60;
         return `${j > 0 ? j + " Jam" : ""}${j > 0 && m > 0 ? " " : ""}${m > 0 ? m + " Menit" : ""}`;
       }
 
-      const selesai = new Date(Date.now() + estimasi * 60000).toLocaleString('id-ID', { timeZone: 'Asia/Jakarta' });
+      // Simpan ke session
+      session.nominal = nominal;
+      session.estimasiProses = estimasiProses;
+      session.totalHarga = totalHarga;
+      session.hargaPerM = hargaPerM;
+      session.state = "awaiting_confirm_order";
 
       return await sock.sendMessage(sender, {
-        text: `🧭 Estimasi proses: ${formatEstimasi(estimasi)}\n` +
-              `🚗 Estimasi selesai: ${selesai}\n` +
-              `📌 *Catatan: Estimasi jika ada gamepass +50% Job bisa lebih cepat*\n\n` +
-              `_Ketik 1 untuk langsung order._\n` +
-              `_Ketik 0 untuk kembali ke menu._`
+        text:
+          `🧭 Estimasi proses: *${formatEstimasi(estimasiProses)}*\n` +
+          `🚗 Estimasi selesai: *${selesai}*\n` +
+          `💰 Total: *Rp${totalHarga.toLocaleString()}*\n\n` +
+          `Ketik *1* untuk langsung order.\n` +
+          `Ketik *0* untuk kembali ke menu.`
       });
-
     } else {
       return await sock.sendMessage(sender, {
-        text: "❌ Format jumlah tidak dikenali. Contoh: 1000"
+        text: "❌ Format jumlah tidak dikenali. Contoh: 50"
+      });
+    }
+  }
+
+  // STATE AWAITING_CONFIRM_ORDER
+  if (session?.state === "awaiting_confirm_order") {
+    if (text === "1") {
+      session.state = "awaiting_username"; // lanjut ke input username
+
+      return await sock.sendMessage(sender, {
+        text:
+          `✅ *Order ${session.nominal}M dibuat!*\n` +
+          `💵 Harga per M: *Rp${session.hargaPerM.toLocaleString()}*\n` +
+          `💰 Total: *Rp${session.totalHarga.toLocaleString()}*\n\n` +
+          `Sekarang kirimkan *username akun CDID*-mu.\n` +
+          `Ketik 0 untuk batal dan kembali ke menu.`
+      });
+    } else if (text === "0") {
+      session.state = "main_menu"; // atau apapun state menu awal kamu
+      return await sock.sendMessage(sender, {
+        text: "❌ Order dibatalkan. Kembali ke menu utama."
+      });
+    } else {
+      return await sock.sendMessage(sender, {
+        text: "❗ Pilihan tidak dikenali. Ketik *1* untuk order atau *0* untuk batal."
       });
     }
   }
@@ -495,7 +529,7 @@ _Ketik 0 untuk kembali ke menu utama._`;
     if (text === "3" || text.includes("etimasi")) {
       setSession(sender, { state: "hitung_estimasi" });
       return await sock.sendMessage(sender, { 
-        text: `Masukkan nominal uang yang ingin dihitung estimasi prosesnya`
+        text: `Masukkan nominal uang yang kamu ingin hitung estimasi prosesnya.\nContoh : 10 / 10M\n_Ketik 0 untuk kembali ke menu utama._`
        });
 
     }

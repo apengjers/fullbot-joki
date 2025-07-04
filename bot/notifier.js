@@ -35,7 +35,7 @@ async function notifyPaymentReceived(sock, order) {
       `Halo kak, joki sudah mulai diproses ya kak 🙏\n` +
       `📦 Jumlah: *${order.jumlah}${order.jenis === "minigame" ? "P" : "M"}*\n` +
       `💳 Total: *Rp${order.totalHarga.toLocaleString()}*\n\n` +
-      `🧭 Estimasi proses: *${formatEstimasi(estimasiProses)} menit*\n` +
+      `🧭 Estimasi proses: *${formatEstimasi(estimasiProses)}*\n` +
       `🚗 Estimasi selesai: *${estimasiSelesai}*\n\n` +
       `Selama proses berlangsung *mohon jangan ditabrak/dimainkan dulu akunnya* agar tidak mengganggu proses 🙏\n\n` +
       `*Estimasi tersebut sudah termasuk bonus uangnya juga ya kak 💸*\n\n` +
