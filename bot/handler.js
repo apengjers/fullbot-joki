@@ -426,7 +426,7 @@ _Ketik 0 untuk batal dan kembali ke menu_`,
   if (session?.state === "hitung_estimasi") {
     const nominal = parseInt(text);
     if (!isNaN(nominal)) {
-      const hargaPerM = 1000;
+      const hargaPerM = order.jumlah >= 100 ? hargaDiskon : hargaNormal;
       const totalHarga = nominal * hargaPerM;
 
       const estimasiProses = Math.ceil((nominal + nominal * 0.10) * 20);
