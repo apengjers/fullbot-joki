@@ -142,8 +142,8 @@ async function handleMessage(sock, msg) {
     order.status = "menunggu_pembayaran_manual";
     order.totalHarga = total;
     order.kodeUnik = kodeUnik;
-    order.qrUrl = 'https://i.imgur.com/VxlzvdX.jpeg'; // ✅ link QRIS kamu
-    await order.save();
+    order.qrUrl = 'http:localhost:3000/qris.jpg'; // ✅ link QRIS kamu
+    await order.save(); 
 
     clearSession(sender);
 
@@ -211,7 +211,7 @@ async function handleMessage(sock, msg) {
 //       });
 //     }
 //   }
-
+  // STATE: AWAITING_PASSWORDMG MANUAL
   if (session?.state === "awaiting_passwordmg") {
     const order = await Order.findOne({ orderId: session.orderId });
     if (!order) {
@@ -227,7 +227,7 @@ async function handleMessage(sock, msg) {
     order.status = "menunggu_pembayaran_manual";
     order.totalHarga = total;
     order.kodeUnik = kodeUnik;
-    order.qrUrl = 'https://i.imgur.com/VxlzvdX.jpeg';
+    order.qrUrl = 'http:localhost:3000/qris.jpg';
     await order.save();
 
     clearSession(sender);
