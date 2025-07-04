@@ -12,6 +12,12 @@ async function notifyCustomer(sock, order) {
   }
 }
 
+function formatEstimasi(menit) {
+  const jam = Math.floor(menit / 60);
+  const sisaMenit = menit % 60;
+  return `${jam > 0 ? `${jam} Jam` : ""}${jam > 0 && sisaMenit > 0 ? " " : ""}${sisaMenit > 0 ? `${sisaMenit} Menit` : ""}`;
+}
+
 async function notifyPaymentReceived(sock, order) {
   try {
     const waId = order.waNumber.endsWith("@s.whatsapp.net")
@@ -29,7 +35,7 @@ async function notifyPaymentReceived(sock, order) {
       `Halo kak, joki sudah mulai diproses ya kak 🙏\n` +
       `📦 Jumlah: *${order.jumlah}${order.jenis === "minigame" ? "P" : "M"}*\n` +
       `💳 Total: *Rp${order.totalHarga.toLocaleString()}*\n\n` +
-      `🧭 Estimasi proses: *${estimasiProses} menit*\n` +
+      `🧭 Estimasi proses: *${formatEstimasi(estimasiProses)} menit*\n` +
       `🚗 Estimasi selesai: *${estimasiSelesai}*\n\n` +
       `Selama proses berlangsung *mohon jangan ditabrak/dimainkan dulu akunnya* agar tidak mengganggu proses 🙏\n\n` +
       `*Estimasi tersebut sudah termasuk bonus uangnya juga ya kak 💸*\n\n` +
