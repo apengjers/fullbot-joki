@@ -435,13 +435,16 @@ _Ketik 0 untuk batal dan kembali ke menu_`,
         return `${j > 0 ? j + " Jam" : ""}${j > 0 && m > 0 ? " " : ""}${m > 0 ? m + " Menit" : ""}`;
       }
 
+      const selesai = new Date(Date.now() + estimasi * 60000).toLocaleString('id-ID', { timeZone: 'Asia/Jakarta' });
+
       return await sock.sendMessage(sender, {
         text: `🧭 Estimasi proses: ${formatEstimasi(estimasi)}\n` +
-              `🚗 Estimasi selesai: ${new Date(Date.now() + estimasi * 60000).toLocaleString()}\n` +
+              `🚗 Estimasi selesai: ${selesai}\n` +
               `📌 *Catatan: Estimasi jika ada gamepass +50% Job bisa lebih cepat*\n\n` +
               `_Ketik 1 untuk langsung order._\n` +
               `_Ketik 0 untuk kembali ke menu._`
       });
+
     } else {
       return await sock.sendMessage(sender, {
         text: "❌ Format jumlah tidak dikenali. Contoh: 1000"
@@ -496,6 +499,7 @@ _Ketik 0 untuk kembali ke menu utama._`;
        });
 
     }
+
     if (text === "4" || text.includes("admin")) {
       return await sock.sendMessage(sender, {
         text: "📞 Hubungi admin via WhatsApp:\nhttps://wa.me/6282113780480\n📱 Discord:\nhttps://discord.gg/A98JsvGZ"

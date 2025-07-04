@@ -35,9 +35,13 @@ function registerBot(sock) {
         return interaction.reply({ content: "❌ Order tidak ditemukan.", ephemeral: true });
       }
 
-      if (order.status === "menunggu_pembayaran_manual") {
-        order.status = "pembayaran_diterima";
-        await order.save();
+      if (["menunggu_pembayaran_manual", "pembayaran_diterima"].includes(order.status)) {
+        const wasManual = order.status === "menunggu_pembayaran_manual";
+
+        if (wasManual) {
+          order.status = "pembayaran_diterima";
+          await order.save();
+        }
 
         try {
           await notifyPaymentReceived(sock, order);
@@ -59,7 +63,7 @@ function registerBot(sock) {
           await msg.edit({ embeds: [embed] });
 
           return interaction.reply({
-            content: `✅ Status order *${order.orderId}* diupdate: 💰 Pembayaran Diterima.`,
+            content: `✅ Status order *${order.orderId}* dipastikan: 💰 Pembayaran Diterima. Notifikasi WA dikirim.`,
             ephemeral: true,
           });
         } catch (err) {
@@ -206,7 +210,7 @@ async function sendOrderToDiscord(order) {
 
   const row = new ActionRowBuilder().addComponents(
     new ButtonBuilder()
-    .setCustomId(`pembayaran_${order.orderId}`) // ✅ Button Baru
+    .setCustomId(`pembayaran_${order.orderId}`)
     .setLabel("Pembayaran Diterima")
     .setStyle(ButtonStyle.Secondary),
     new ButtonBuilder()
