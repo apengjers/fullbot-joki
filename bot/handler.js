@@ -2,7 +2,7 @@
 
 const Order = require("../backend/models/Order");
 const { setSession, getSession, clearSession } = require("../backend/models/sessions");
-const { createGopayPayment } = require("../backend/models/midtrans");
+// const { createGopayPayment } = require("../backend/models/midtrans");
 
 const cooldownMap = new Map();
 const hargaNormal = 1000;
@@ -79,7 +79,54 @@ async function handleMessage(sock, msg) {
 
   const session = getSession(sender);
 
-  // STATE: AWAITING_PASSWORD
+//   // STATE: AWAITING_PASSWORD MIDTRANS
+//   if (session?.state === "awaiting_password") {
+//     const order = await Order.findOne({ orderId: session.orderId });
+//     if (!order) {
+//       clearSession(sender);
+//       return await sock.sendMessage(sender, { text: "❌ Order tidak ditemukan. Ketik 1 untuk mulai ulang." });
+//     }
+
+//     order.password = text;
+//     const kodeUnik = Math.floor(Math.random() * 100) + 1;
+//     const hargaPerM = order.jumlah >= 100 ? hargaDiskon : hargaNormal;
+//     const total = order.jumlah * hargaPerM + kodeUnik;
+
+//     try {
+//       const result = await createGopayPayment(order.orderId, total);
+
+//       order.status = "menunggu_pembayaran";
+//       order.totalHarga = total;
+//       order.kodeUnik = kodeUnik;
+//       order.snapUrl = result.snapUrl;
+//       await order.save();
+
+//       clearSession(sender);
+
+//       return await sock.sendMessage(sender, {
+//         text: `✅ *Password diterima!*
+
+// 🆔 Order ID: *${order.orderId}*
+// 💳 Total bayar: *Rp${total.toLocaleString()}*
+// 🧭 Batas waktu pembayaran: *15 menit*
+
+// 📱 Klik link berikut untuk bayar lewat Qris:
+// ${result.snapUrl}#/gopay-qris
+
+// 📌 Setelah bayar, admin akan segera menghubungi anda
+
+// (Ketik 0 untuk kembali ke menu)`
+//       });
+
+//     } catch (error) {
+//       console.error("❌ Error saat membuat pembayaran Snap:", error);
+//       return await sock.sendMessage(sender, {
+//         text: `❌ Terjadi kesalahan saat membuat pembayaran.\nSilakan coba lagi.\n\nError: ${error.message || error}`
+//       });
+//     }
+//   }
+
+  // STATE: AWAITING_PASSWORD MANUAL
   if (session?.state === "awaiting_password") {
     const order = await Order.findOne({ orderId: session.orderId });
     if (!order) {
@@ -92,41 +139,79 @@ async function handleMessage(sock, msg) {
     const hargaPerM = order.jumlah >= 100 ? hargaDiskon : hargaNormal;
     const total = order.jumlah * hargaPerM + kodeUnik;
 
-    try {
-      const result = await createGopayPayment(order.orderId, total);
+    order.status = "menunggu_pembayaran_manual";
+    order.totalHarga = total;
+    order.kodeUnik = kodeUnik;
+    order.qrUrl = 'https://i.imgur.com/VxlzvdX.jpeg'; // ✅ link QRIS kamu
+    await order.save();
 
-      order.status = "menunggu_pembayaran";
-      order.totalHarga = total;
-      order.kodeUnik = kodeUnik;
-      order.snapUrl = result.snapUrl;
-      await order.save();
+    clearSession(sender);
 
-      clearSession(sender);
+    await sock.sendMessage(sender, {
+      text: `✅ *Password diterima!*
 
-      return await sock.sendMessage(sender, {
-        text: `✅ *Password diterima!*
+  🆔 Order ID: *${order.orderId}*
+  💳 Total bayar: *Rp${total.toLocaleString()}*
+  📌 Silakan transfer ke QRIS berikut ini lalu kirim bukti pembayaran ke admin.
 
-🆔 Order ID: *${order.orderId}*
-💳 Total bayar: *Rp${total.toLocaleString()}*
-🧭 Batas waktu pembayaran: *15 menit*
+  (Ketik 0 untuk kembali ke menu)`
+    });
 
-📱 Klik link berikut untuk bayar lewat Qris:
-${result.snapUrl}#/gopay-qris
+    await sock.sendMessage(sender, {
+      image: { url: order.qrUrl },
+      caption: `🔗 QRIS Pembayaran\nOrder ID: ${order.orderId}\nTotal: Rp${total.toLocaleString()}`
+    });
 
-📌 Setelah bayar, admin akan segera menghubungi anda
-
-(Ketik 0 untuk kembali ke menu)`
-      });
-
-    } catch (error) {
-      console.error("❌ Error saat membuat pembayaran Snap:", error);
-      return await sock.sendMessage(sender, {
-        text: `❌ Terjadi kesalahan saat membuat pembayaran.\nSilakan coba lagi.\n\nError: ${error.message || error}`
-      });
-    }
+    return;
   }
 
-  // STATE: AWAITING_PASSWORD_MG
+//   // STATE: AWAITING_PASSWORD_MG MIDTRANS
+//   if (session?.state === "awaiting_passwordmg") {
+//     const order = await Order.findOne({ orderId: session.orderId });
+//     if (!order) {
+//       clearSession(sender);
+//       return await sock.sendMessage(sender, { text: "❌ Order tidak ditemukan. Ketik 1 untuk mulai ulang." });
+//     }
+
+//     order.password = text;
+//     const kodeUnik = Math.floor(Math.random() * 100) + 1;
+//     const hargaPerPoin = order.jumlah >= 1000 ? hargaDiskonMG : hargaNormalMG;
+//     const total = order.jumlah * hargaPerPoin + kodeUnik;
+
+//     try {
+//       const result = await createGopayPayment(order.orderId, total);
+
+//       order.status = "menunggu_pembayaran";
+//       order.totalHarga = total;
+//       order.kodeUnik = kodeUnik;
+//       order.snapUrl = result.snapUrl;
+//       await order.save();
+
+//       clearSession(sender);
+
+//       return await sock.sendMessage(sender, {
+//         text: `✅ *Password diterima!*
+
+// 🆔 Order ID: *${order.orderId}*
+// 💳 Total bayar: *Rp${total.toLocaleString()}*
+// 🧭 Batas waktu pembayaran: *15 menit*
+
+// 📱 Klik link berikut untuk bayar lewat Qris:
+// ${result.snapUrl}#/gopay-qris
+
+// 📌 Setelah bayar, admin akan segera menghubungi anda
+
+// (Ketik 0 untuk kembali ke menu)`
+//       });
+
+//     } catch (error) {
+//       console.error("❌ Error saat membuat pembayaran Snap:", error);
+//       return await sock.sendMessage(sender, {
+//         text: `❌ Terjadi kesalahan saat membuat pembayaran.\nSilakan coba lagi.\n\nError: ${error.message || error}`
+//       });
+//     }
+//   }
+
   if (session?.state === "awaiting_passwordmg") {
     const order = await Order.findOne({ orderId: session.orderId });
     if (!order) {
@@ -139,38 +224,24 @@ ${result.snapUrl}#/gopay-qris
     const hargaPerPoin = order.jumlah >= 1000 ? hargaDiskonMG : hargaNormalMG;
     const total = order.jumlah * hargaPerPoin + kodeUnik;
 
-    try {
-      const result = await createGopayPayment(order.orderId, total);
+    order.status = "menunggu_pembayaran_manual";
+    order.totalHarga = total;
+    order.kodeUnik = kodeUnik;
+    order.qrUrl = 'https://i.imgur.com/VxlzvdX.jpeg';
+    await order.save();
 
-      order.status = "menunggu_pembayaran";
-      order.totalHarga = total;
-      order.kodeUnik = kodeUnik;
-      order.snapUrl = result.snapUrl;
-      await order.save();
+    clearSession(sender);
 
-      clearSession(sender);
+    await sock.sendMessage(sender, {
+      text: `✅ *Password diterima!*\n\n🆔 Order ID: *${order.orderId}*\n💳 Total bayar: *Rp${total.toLocaleString()}*\n📌 Silakan transfer ke QRIS berikut ini lalu kirim bukti pembayaran ke admin.\n\n(Ketik 0 untuk kembali ke menu)`
+    });
 
-      return await sock.sendMessage(sender, {
-        text: `✅ *Password diterima!*
+    await sock.sendMessage(sender, {
+      image: { url: order.qrUrl },
+      caption: `🔗 QRIS Pembayaran\nOrder ID: ${order.orderId}\nTotal: Rp${total.toLocaleString()}`
+    });
 
-🆔 Order ID: *${order.orderId}*
-💳 Total bayar: *Rp${total.toLocaleString()}*
-🧭 Batas waktu pembayaran: *15 menit*
-
-📱 Klik link berikut untuk bayar lewat Qris:
-${result.snapUrl}#/gopay-qris
-
-📌 Setelah bayar, admin akan segera menghubungi anda
-
-(Ketik 0 untuk kembali ke menu)`
-      });
-
-    } catch (error) {
-      console.error("❌ Error saat membuat pembayaran Snap:", error);
-      return await sock.sendMessage(sender, {
-        text: `❌ Terjadi kesalahan saat membuat pembayaran.\nSilakan coba lagi.\n\nError: ${error.message || error}`
-      });
-    }
+    return;
   }
 
   // ==============================

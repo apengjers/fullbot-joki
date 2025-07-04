@@ -1,7 +1,5 @@
 const express = require("express");
-const bodyParser = require('body-parser');
 const app = express();
-app.use(bodyParser.json());
 const cors = require("cors");
 const crypto = require("crypto");
 const mongoose = require("mongoose");
@@ -49,9 +47,6 @@ setInterval(async () => {
     });
   }
 }, 60 * 1000); // Cek setiap 1 menit
-
-// Route callback Tripay
-app.use('/api/tripay', tripayCallback);
 
 // ✅ Webhook Midtrans
 app.post("/midtrans-webhook", async (req, res) => {
