@@ -464,18 +464,38 @@ _Ketik 0 untuk batal dan kembali ke menu_`,
   // STATE AWAITING_CONFIRM_ORDER
   if (session?.state === "awaiting_confirm_order") {
     if (text === "1") {
-      session.state = "awaiting_username"; // lanjut ke input username
+      // 1. Buat orderId
+      const orderId = "ORD" + Date.now();
+
+      // 2. Buat objek order
+      const newOrder = {
+        orderId,
+        waNumber: sender,
+        jumlah: session.nominal,
+        totalHarga: session.totalHarga,
+        status: "menunggu_username",
+        createdAt: new Date(),
+        jenis: session.jenis || "uang",
+      };
+
+      // 3. Simpan order ke DB
+      await Order.create(newOrder);
+
+      // 4. Simpan orderId ke session
+      session.orderId = orderId;
+      session.state = "awaiting_username";
 
       return await sock.sendMessage(sender, {
         text:
           `✅ *Order ${session.nominal}M dibuat!*\n` +
           `💵 Harga per M: *Rp${session.hargaPerM.toLocaleString()}*\n` +
           `💰 Total: *Rp${session.totalHarga.toLocaleString()}*\n\n` +
+          `📌 *Catatan: Estimasi jika ada gamepass +50% Job bisa lebih cepat*\n\n` +
           `Sekarang kirimkan *username akun CDID*-mu.\n` +
           `Ketik 0 untuk batal dan kembali ke menu.`
       });
     } else if (text === "0") {
-      session.state = "main_menu"; // atau apapun state menu awal kamu
+      session.state = "main_menu";
       return await sock.sendMessage(sender, {
         text: "❌ Order dibatalkan. Kembali ke menu utama."
       });
@@ -485,7 +505,6 @@ _Ketik 0 untuk batal dan kembali ke menu_`,
       });
     }
   }
-
 
 
   // ==============================
