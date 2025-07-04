@@ -27,7 +27,12 @@ async function notifyPaymentReceived(sock, order) {
       `📦 Jumlah: *${order.jumlah}${order.jenis === "minigame" ? "P" : "M"}*\n` +
       `💳 Total: *Rp${order.totalHarga.toLocaleString()}*\n\n` +
       `Estimasi Proses: *${order.estimasiProses} menit*\n` +
-      `Estimasi Selesai: *${estimasiSelesaiFormatted}*\n\n` +
+      `Halo kak, joki sudah mulai diproses ya kak 🙏
+Estimasi selesai: *${order.estimasiSelesaiFormatted}*
+Selama proses berlangsung mohon jangan ditabrak/dimainkan dulu akunnya agar tidak mengganggu proses 🙏
+Estimasi tersebut sudah termasuk bonus uangnya juga ya kak 💸
+Mohon ditunggu dan terima kasih atas kepercayaannya 😊` +
+      
       `Terima kasih sudah menggunakan layanan kami.`;
 
     console.log("📤 Kirim WA ke:", waId);
