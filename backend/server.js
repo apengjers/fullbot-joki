@@ -1,19 +1,22 @@
 const express = require("express");
+const bodyParser = require('body-parser');
 const app = express();
+app.use(bodyParser.json());
 const cors = require("cors");
 const crypto = require("crypto");
 const mongoose = require("mongoose");
+const tripayCallback = require('./tripayCallback');
 require("dotenv").config();
 
 const axios = require("axios");
 const Order = require("./models/Order");
-const { sendOrderToDiscord } = require("../discord/discordBot");
-const { router: tripayCallback, setSock } = require("../routes/tripayCallback");
+const { sendOrderToDiscord } = require("../discord/discordBot"); // 👈 Tambahan penting
 
 app.use(cors());
 app.use(express.json());
-app.use(express.static("public"));
+app.use(express.static("public")); // tambahkan ini
 
+// ✅ Koneksi MongoDB
 mongoose.connect(process.env.MONGODB_URI, {
   useNewUrlParser: true,
   useUnifiedTopology: true,
@@ -23,18 +26,10 @@ mongoose.connect(process.env.MONGODB_URI, {
 
 let sockGlobal = null;
 
-setSock({
-  sendMessage: async (jid, msg) => {
-    if (sockGlobal) {
-      return await sockGlobal.sendMessage(jid, msg);
-    } else {
-      console.warn("❌ WhatsApp bot belum siap");
-    }
-  }
-});
-
+// ✅ Scheduler untuk hapus order kadaluarsa (menunggu_* > 20 menit)
 setInterval(async () => {
-  const batasWaktu = new Date(Date.now() - 20 * 60 * 1000);
+  const batasWaktu = new Date(Date.now() - 20 * 60 * 1000); // 20 menit
+
   const expiredStatuses = ["menunggu_pembayaran", "menunggu_password", "menunggu_username"];
 
   const expiredOrders = await Order.find({
@@ -53,8 +48,12 @@ setInterval(async () => {
       updatedAt: { $lt: batasWaktu },
     });
   }
-}, 60 * 1000);
+}, 60 * 1000); // Cek setiap 1 menit
 
+// Route callback Tripay
+app.use('/api/tripay', tripayCallback);
+
+// ✅ Webhook Midtrans
 app.post("/midtrans-webhook", async (req, res) => {
   const data = req.body;
   console.log("📩 Webhook diterima:", JSON.stringify(data, null, 2));
@@ -83,6 +82,7 @@ app.post("/midtrans-webhook", async (req, res) => {
 
     console.log(`✅ Order ${order_id} sudah dibayar. Status diperbarui.`);
 
+    // WhatsApp notifikasi
     if (sockGlobal) {
       try {
         await sockGlobal.sendMessage(order.waNumber, {
@@ -93,6 +93,8 @@ app.post("/midtrans-webhook", async (req, res) => {
       }
     }
 
+
+    // Kirim notifikasi Bot Discord (embed + tombol)
     try {
       await sendOrderToDiscord(order);
       console.log("✅ Notifikasi Bot Discord terkirim.");
@@ -112,8 +114,10 @@ app.setBotSocket = function (sock) {
 
 app.get("/", (req, res) => res.send("Webhook aktif 🚀"));
 
+// API untuk frontend admin panel
 app.get("/api/orders", async (req, res) => {
   const { start, end, notes } = req.query;
+
   const query = {};
   if (start && end) {
     query.createdAt = {
@@ -157,7 +161,6 @@ app.get("/thanks", (req, res) => {
   res.redirect("/thanks.html" + req.url.slice(7));
 });
 
-app.use("/tripay", tripayCallback);
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
