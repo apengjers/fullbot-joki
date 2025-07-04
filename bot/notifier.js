@@ -18,7 +18,17 @@ async function notifyPaymentReceived(sock, order) {
       ? order.waNumber
       : `${order.waNumber}@s.whatsapp.net`;
 
-    const message = `✅ *Pembayaran untuk Order ${order.orderId} sudah diterima!*\n\nAdmin akan segera memproses pesananmu ya, mohon ditunggu. Terima kasih 🙏`;
+    // Format waktu estimasi selesai
+    const estimasiSelesaiFormatted = new Date(order.estimasiSelesai).toLocaleString('id-ID', {
+      timeZone: 'Asia/Jakarta',
+    });
+
+    const message = `✅ *Pembayaran untuk Order ${order.orderId} sudah diterima!*\n\n` +
+      `📦 Jumlah: *${order.jumlah}${order.jenis === "minigame" ? "P" : "M"}*\n` +
+      `💳 Total: *Rp${order.totalHarga.toLocaleString()}*\n\n` +
+      `Estimasi Proses: *${order.estimasiProses} menit*\n` +
+      `Estimasi Selesai: *${estimasiSelesaiFormatted}*\n\n` +
+      `Terima kasih sudah menggunakan layanan kami.`;
 
     console.log("📤 Kirim WA ke:", waId);
     console.log("📨 Pesan:", message);
@@ -30,6 +40,7 @@ async function notifyPaymentReceived(sock, order) {
     console.error("❌ Gagal kirim notifikasi pembayaran:", e);
   }
 }
+
 
 
 module.exports = {
