@@ -13,18 +13,24 @@ async function notifyCustomer(sock, order) {
 }
 
 async function notifyPaymentReceived(sock, order) {
-  const waId = order.waNumber.endsWith("@s.whatsapp.net")
-    ? order.waNumber
-    : `${order.waNumber}@s.whatsapp.net`;
-
-  const message = `✅ *Pembayaran untuk Order ${order.orderId} sudah diterima!*\n\nAdmin akan segera memproses pesananmu ya, mohon ditunggu. Terima kasih 🙏`;
   try {
+    const waId = order.waNumber.endsWith("@s.whatsapp.net")
+      ? order.waNumber
+      : `${order.waNumber}@s.whatsapp.net`;
+
+    const message = `✅ *Pembayaran untuk Order ${order.orderId} sudah diterima!*\n\nAdmin akan segera memproses pesananmu ya, mohon ditunggu. Terima kasih 🙏`;
+
+    console.log("📤 Kirim WA ke:", waId);
+    console.log("📨 Pesan:", message);
+
     await sock.sendMessage(waId, { text: message });
-    console.log(`✅ Notifikasi Pembayaran diterima dikirim ke ${waId}`);
+
+    console.log(`✅ WA terkirim ke ${waId}`);
   } catch (e) {
-    console.error("❌ Gagal kirim notifikasi pembayaran diterima:", e);
+    console.error("❌ Gagal kirim notifikasi pembayaran:", e);
   }
 }
+
 
 module.exports = {
   notifyCustomer,
