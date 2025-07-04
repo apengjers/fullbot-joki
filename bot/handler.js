@@ -458,10 +458,11 @@ _Ketik 0 untuk batal dan kembali ke menu_`,
         text:
           `🧭 Estimasi proses: *${formatEstimasi(estimasiProses)}*\n` +
           `🚗 Estimasi selesai: *${selesai}*\n` +
-          `💰 Total: *Rp${totalHarga.toLocaleString()}*\n\n` +
+          `💰 Total: *Rp${totalHarga.toLocaleString()}*\n` +
+          `📌 *Catatan: Estimasi jika ada gamepass +50% Job bisa lebih cepat*\n\n` +
           `Ketik *1* untuk langsung order.\n` +
           `Ketik *0* untuk kembali ke menu.`
-      });
+        });
     } else {
       return await sock.sendMessage(sender, {
         text: "❌ Format jumlah tidak dikenali. Contoh: 50"
@@ -499,7 +500,6 @@ _Ketik 0 untuk batal dan kembali ke menu_`,
           `✅ *Order ${session.nominal}M dibuat!*\n` +
           `💵 Harga per M: *Rp${session.hargaPerM.toLocaleString()}*\n` +
           `💰 Total: *Rp${session.totalHarga.toLocaleString()}*\n\n` +
-          `📌 *Catatan: Estimasi jika ada gamepass +50% Job bisa lebih cepat*\n\n` +
           `Sekarang kirimkan *username akun CDID*-mu.\n` +
           `Ketik 0 untuk batal dan kembali ke menu.`
       });
