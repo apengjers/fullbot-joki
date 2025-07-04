@@ -38,7 +38,12 @@ function registerBot(sock) {
       if (order.status === "menunggu_pembayaran_manual") {
         order.status = "pembayaran_diterima";
         await order.save();
-        await notifyPaymentReceived(sock, order);
+
+        try {
+          await notifyPaymentReceived(sock, order);
+        } catch (err) {
+          console.error("❌ Gagal kirim notif WA pembayaran diterima:", err);
+        }
 
         try {
           const channel = await client.channels.fetch(order.discordChannelId);
@@ -58,9 +63,9 @@ function registerBot(sock) {
             ephemeral: true,
           });
         } catch (err) {
-          console.error("❌ Gagal update pesan Discord:", err);
+          console.error("❌ Gagal update embed:", err);
           return interaction.reply({
-            content: "❌ Gagal update pesan Discord.",
+            content: "❌ Gagal update embed pesan Discord.",
             ephemeral: true,
           });
         }
