@@ -3,7 +3,6 @@ const app = express();
 const cors = require("cors");
 const crypto = require("crypto");
 const mongoose = require("mongoose");
-const tripayCallback = require('./tripayCallback');
 require("dotenv").config();
 
 const axios = require("axios");
