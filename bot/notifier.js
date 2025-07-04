@@ -19,9 +19,11 @@ async function notifyPaymentReceived(sock, order) {
       : `${order.waNumber}@s.whatsapp.net`;
 
     // Hitung estimasi proses dan selesai
-    const estimasiProses = Math.ceil((order.jumlah + (order.jumlah * 0.10)) / 3);
+    const nominal = order.jumlah;
+    const estimasiProses = Math.ceil((nominal + nominal * 0.10) * 20); // 1M = 20 menit
     const estimasiSelesai = new Date(Date.now() + estimasiProses * 60000)
       .toLocaleString('id-ID', { timeZone: 'Asia/Jakarta' });
+
 
     const message = `✅ *Pembayaran untuk Order ${order.orderId} sudah diterima!*\n\n` +
       `Halo kak, joki sudah mulai diproses ya kak 🙏\n` +
