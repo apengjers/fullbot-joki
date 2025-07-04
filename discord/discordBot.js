@@ -11,7 +11,7 @@ const {
 } = require("discord.js");
 const mongoose = require("mongoose");
 const Order = require("../backend/models/Order");
-const { notifyCustomer } = require("../bot/notifier"); // ⬅ gunakan destructuring
+const { notifyCustomer, notifyPaymentReceived } = require("../bot/notifier"); // ⬅ gunakan destructuring
 
 const client = new Client({
   intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages, GatewayIntentBits.MessageContent],
