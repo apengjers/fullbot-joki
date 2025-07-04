@@ -13,9 +13,10 @@ async function notifyCustomer(sock, order) {
 }
 
 function formatEstimasi(menit) {
+  const hari = Math.floor(menit / 1440);
   const jam = Math.floor(menit / 60);
   const sisaMenit = menit % 60;
-  return `${jam > 0 ? `${jam} Jam` : ""}${jam > 0 && sisaMenit > 0 ? " " : ""}${sisaMenit > 0 ? `${sisaMenit} Menit` : ""}`;
+  return `${hari > 0 ? `${hari} Hari` : ""}${hari > 0 && jam > 0 ? " " : ""}${jam > 0 ? `${jam} Jam` : ""}${jam > 0 && sisaMenit > 0 ? " " : ""}${sisaMenit > 0 ? `${sisaMenit} Menit` : ""}`;
 }
 
 async function notifyPaymentReceived(sock, order) {

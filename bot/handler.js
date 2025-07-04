@@ -434,9 +434,10 @@ _Ketik 0 untuk batal dan kembali ke menu_`,
         .toLocaleString('id-ID', { timeZone: 'Asia/Jakarta' });
 
       function formatEstimasi(menit) {
+        const h = Math.floor(jam / 24);
         const j = Math.floor(menit / 60);
         const m = menit % 60;
-        return `${j > 0 ? j + " Jam" : ""}${j > 0 && m > 0 ? " " : ""}${m > 0 ? m + " Menit" : ""}`;
+        return `${h > 0 ? h + " Hari" : ""}${h > 0 && j > 0 ? " " : ""}${j > 0 ? j + " Jam" : ""}${j > 0 && m > 0 ? " " : ""}${m > 0 ? m + " Menit" : ""}`;
       }
 
       // Simpan ke session
