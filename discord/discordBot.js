@@ -83,46 +83,69 @@ function registerBot(sock) {
 
     if (action === "kerjakan") {
       const order = await Order.findOne({ orderId });
-
+    
       if (!order) {
         return interaction.reply({ content: "❌ Order tidak ditemukan.", ephemeral: true });
       }
-
+    
       if (order.status === "selesai") {
         return interaction.reply({ content: "❌ Order ini sudah selesai sebelumnya.", ephemeral: true });
       }
-
-      // Jika belum ada worker, set worker-nya
+    
+      // Kalau order belum punya worker, kita minta input duit awal dulu
       if (!order.worker) {
         order.worker = interaction.user.username;
-        await order.save();
-      }
-
-      // Tapi jika worker-nya bukan yang klik sekarang
-      if (order.worker !== interaction.user.username) {
+    
+        await interaction.reply({
+          content: "💬 Silakan masukkan *duit awal* atau *point awal* kamu di sini:",
+          ephemeral: true,
+        });
+    
+        const msgFilter = m => m.author.id === interaction.user.id;
+        try {
+          const collected = await interaction.channel.awaitMessages({ filter: msgFilter, max: 1, time: 30000, errors: ['time'] });
+          const userInput = collected.first().content;
+    
+          order.awalDuit = userInput;
+          await order.save();
+    
+          // Update embed dengan worker & duit awal
+          const channel = await client.channels.fetch(order.discordChannelId);
+          const msg = await channel.messages.fetch(order.discordMessageId);
+          const embed = EmbedBuilder.from(msg.embeds[0]);
+    
+          embed.data.fields.forEach(field => {
+            if (field.name === "👨‍💻 Dikerjakan oleh") {
+              field.value = order.worker;
+            }
+          });
+    
+          // Tambah field baru jika ingin menampilkan duit awal di embed
+          embed.addFields({
+            name: "💵 Duit Awal", value: order.awalDuit, inline: true
+          });
+    
+          await msg.edit({ embeds: [embed] });
+    
+          return interaction.followUp({
+            content: `✅ Order ini sekarang dikerjakan oleh **${order.worker}** dengan duit awal: \`${order.awalDuit}\`.`,
+            ephemeral: true,
+          });
+    
+        } catch (err) {
+          return interaction.followUp({
+            content: "⏰ Waktu habis. Input tidak diterima. Silakan tekan tombol lagi jika ingin mencoba ulang.",
+            ephemeral: true,
+          });
+        }
+      } else if (order.worker !== interaction.user.username) {
         return interaction.reply({
           content: `❌ Order sudah dikerjakan oleh **${order.worker}**.`,
           ephemeral: true,
         });
-      }
-      try {
-        const channel = await client.channels.fetch(order.discordChannelId);
-        const msg = await channel.messages.fetch(order.discordMessageId);
-        const embed = EmbedBuilder.from(msg.embeds[0]);
-        embed.data.fields.forEach(field => {
-          if (field.name === "👨‍💻 Dikerjakan oleh") {
-            field.value = order.worker;
-          }
-        });
-        await msg.edit({ embeds: [embed] });
+      } else {
         return interaction.reply({
-          content: `✅ Kamu sekarang mengambil order ini sebagai **${order.worker}**.`,
-          ephemeral: true,
-        });
-      } catch (err) {
-        console.error("❌ Gagal update pesan Discord:", err);
-        return interaction.reply({
-          content: "❌ Gagal update pesan Discord.",
+          content: `✅ Kamu sudah mengambil order ini sebelumnya sebagai **${order.worker}**.`,
           ephemeral: true,
         });
       }
@@ -173,6 +196,7 @@ function registerBot(sock) {
           ephemeral: true,
         });
       }
+
     }
   });
 }
@@ -191,16 +215,24 @@ async function sendOrderToDiscord(order) {
           : "-",
         inline: true,
       },
-
       {
         name: "🔢 Jumlah",
-        value: `${order.jumlah}${order.jenis === "minigame" ? "P" : "M"}`,
+        value: `${order.jumlah} ${
+          order.jenis === "uang"
+            ? "M"
+            : order.jenis === "minigame"
+            ? "MG"
+            : order.jenis === "fishing"
+            ? "CAIL"
+            : "-"
+        }`,
         inline: true,
       },
       { name: "💳 Total", value: `Rp${order.totalHarga.toLocaleString()}`, inline: true },
       { name: "📦 Status", value: order.status, inline: true },
-      { name: "👨‍💻 Dikerjakan oleh", value: order.worker || "-", inline: true }
-    )
+      { name: "👨‍💻 Dikerjakan oleh", value: order.worker || "-", inline: true },
+      { name: "💵 Duit Awal", value: order.awalDuit || "-", inline: true } // ✅ tambahkan baris ini
+    )    
     .setColor(0x57f287)
     .setTimestamp();
 
@@ -232,3 +264,4 @@ async function sendOrderToDiscord(order) {
 }
 
 module.exports = { client, registerBot, sendOrderToDiscord };
+ 

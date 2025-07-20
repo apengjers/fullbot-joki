@@ -19,8 +19,10 @@ const orderSchema = new mongoose.Schema({
   createdAt: { type: Date, default: Date.now },
   jenis: {
   type: String,
-  enum: ["uang", "minigame"],
-  default: "uang" 
+  enum: ["uang", "minigame", "fishing"],
+  default: "uang" ,
+  awalDuit: { type: String },
+
   }
 }, {
   timestamps: true // ✅ wajib biar bisa pakai .sort({ createdAt: -1 })

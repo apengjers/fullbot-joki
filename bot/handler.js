@@ -10,6 +10,8 @@ const hargaNormal = 1000;
 const hargaDiskon = 750;
 const hargaNormalMG = 100;
 const hargaDiskonMG = 80;
+const hargaNormalFishing = 1000/100;
+const hargaDiskonFishing = 700/100;
 
 const menuUtama = `👋 *Selamat datang di layanan Joki CDID!*
 
@@ -47,10 +49,22 @@ _Ketik jumlah yang diinginkan._
 (Ketik 0 untuk kembali ke menu utama)
 `;
 
+const listjokiFishing = `📊 *Pilih jumlah Cail yang ingin dijoki:*
+• 500
+• 1000
+• 2500
+• 5000
+• 10000
+• Custom Kelipatan 100 dan minimal 500 (contoh: 500c atau 500)
+
+_Ketik jumlah yang diinginkan._
+(Ketik 0 untuk kembali ke menu utama)`;
+
 const pilihJoki = `🚗Menu Joki CDID🚗
 
 1️⃣ Joki UANG CDID💸
 2️⃣ Joki Point Minigame CDID✨
+3️⃣ Joki Mancing CDID🎉
       
 Ketik angka pilihanmu.
 Ketik 0 untuk kembali ke menu utama.`;
@@ -143,7 +157,7 @@ async function handleMessage(sock, msg) {
     order.status = "menunggu_pembayaran_manual";
     order.totalHarga = total;
     order.kodeUnik = kodeUnik;
-    order.qrUrl = 'https://fullbot-joki-production.up.railway.app/qris.jpg'; // ✅ link QRIS kamu
+    order.qrUrl = './public/qris.jpg'; // ✅ link QRIS kamu
     await order.save(); 
 
     clearSession(sender);
@@ -231,7 +245,7 @@ async function handleMessage(sock, msg) {
     order.status = "menunggu_pembayaran_manual";
     order.totalHarga = total;
     order.kodeUnik = kodeUnik;
-    order.qrUrl = 'https://fullbot-joki-production.up.railway.app/qris.jpg';
+    order.qrUrl = './public/qris.jpg';
     await order.save();
 
     clearSession(sender);
@@ -394,6 +408,109 @@ _Ketik 0 untuk batal dan kembali ke menu_`,
     }
   }
 
+  // STATE: AWAITING_JUMLAHFISHING
+  if (session?.state === "awaiting_jumlahfishing") {
+    const jumlah = parseInt(text.replace("c", ""));
+    if (!isNaN(jumlah)) {
+      if (jumlah < 500) {
+        return await sock.sendMessage(sender, { text: `❌ Minimal order 500 cail.` });
+      } else if (jumlah % 100 !== 0) {
+        return await sock.sendMessage(sender, { text: `❌ Jumlah cail harus kelipatan 100.` });
+      }
+
+      const hargaPerCail = jumlah >= 7200 ? hargaDiskonFishing : hargaNormalFishing;
+      const total = jumlah * hargaPerCail;
+      const orderId = generateOrderId();
+
+      const newOrder = new Order({
+        orderId,
+        waNumber: sender,
+        jumlah,
+        totalHarga: total,
+        status: "menunggu_username",
+        jenis: "fishing",
+      });
+
+      await newOrder.save();
+      setSession(sender, { state: "awaiting_usernamefishing", orderId });
+
+      return await sock.sendMessage(sender, {
+        text: `✅ *Order ${jumlah} cail Minigame dibuat!*
+  💵 Harga per cail: Rp${Math.round(hargaPerCail).toLocaleString()}
+  💰 Total: Rp${Math.round(total).toLocaleString()}
+
+  Sekarang kirimkan *username akun CDID*-mu.
+  _Ketik 0 untuk batal dan kembali ke menu_`,
+      });
+    }
+
+    // Jika jumlah tidak valid
+    return await sock.sendMessage(sender, {
+      text: "❌ Format jumlah tidak dikenali. Contoh: 1000 atau 1000c",
+    });
+  }
+
+  //STATE : AWAITING_USERNAMEFISHING
+  if (session?.state === "awaiting_usernamefishing") {
+    const order = await Order.findOne({ orderId: session.orderId });
+    if (!order) {
+      clearSession(sender);
+      return await sock.sendMessage(sender, { text: "❌ Order tidak ditemukan. Ketik 1 untuk mulai ulang." });
+    }
+
+    order.username = text;
+    order.status = "menunggu_password";
+    await order.save();
+
+    setSession(sender, { state: "awaiting_passwordfishing", orderId: order.orderId });
+
+    return await sock.sendMessage(sender, {
+      text: `✅ *Username diterima.*
+
+Sekarang kirimkan *password akun CDID*-mu.
+⚠️ *Pastikan 2FA nonaktif ya agar mempermudah proses login!*
+Jika aktif, admin akan segera menghubungi anda saat order diproses
+
+_Ketik 0 untuk batal dan kembali ke menu_`,
+    });
+  }
+
+  //STATE : AWAITING_PASSWORDFISHING
+  if (session?.state === "awaiting_passwordfishing") {
+    const order = await Order.findOne({ orderId: session.orderId });
+    if (!order) {
+      clearSession(sender);
+      return await sock.sendMessage(sender, { text: "❌ Order tidak ditemukan. Ketik 1 untuk mulai ulang." });
+    }
+
+    order.password = text;
+    const kodeUnik = Math.floor(Math.random() * 100) + 1;
+    const hargaPerPoin = order.jumlah >= 7200 ? hargaDiskonFishing : hargaNormalFishing;
+    const total = order.jumlah * hargaPerPoin + kodeUnik;
+
+    order.status = "menunggu_pembayaran_manual";
+    order.totalHarga = total;
+    order.kodeUnik = kodeUnik;
+    order.qrUrl = './public/qris.jpg';
+    await order.save();
+
+    clearSession(sender);
+
+    await sock.sendMessage(sender, {
+      text: `✅ *Password diterima!*\n\n🆔 Order ID: *${order.orderId}*\n💳 Total bayar: *Rp${total.toLocaleString()}*\n📌 Silakan transfer ke QRIS berikut ini lalu kirim bukti pembayaran ke admin.\n\n(Ketik 0 untuk kembali ke menu)`
+    });
+
+    await sock.sendMessage(sender, {
+      image: { url: order.qrUrl },
+      caption: `🔗 QRIS Pembayaran\nOrder ID: ${order.orderId}\nTotal: Rp${total.toLocaleString()}`
+    });
+
+    await sendOrderToDiscord(order);
+    console.log("✅ Notifikasi Bot Discord terkirim.");
+
+    return;
+  }
+
   // ==============================
   // STATE: AWAITING_JOKI
   // ==============================
@@ -409,13 +526,18 @@ _Ketik 0 untuk batal dan kembali ke menu_`,
         await sock.sendMessage(sender, { text: listjokiMG });
         return;
         break;
+      case 3:
+        setSession(sender, { state: "awaiting_jumlahfishing" });
+        await sock.sendMessage(sender, { text: listjokiFishing });
+        return;
+        break;
       default:
         await sock.sendMessage(sender, { text: "❌ Pilihan tidak dikenali. Ketik 0 untuk kembali ke menu utama." });
     }
   }
   
   // Tambahan handler agar bisa lanjut ke state berikutnya
-  if (text === "1" && session?.state === "hitung_estimasi") {
+  if (text === "Order" && "Joki" && session?.state === "hitung_estimasi") {
     setSession(sender, { state: "awaiting_jumlah" });
     return await sock.sendMessage(sender, {
       text: listJoki
