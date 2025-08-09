@@ -27,29 +27,63 @@ function formatEstimasi(menit) {
   return parts.join(" ");
 }
 
-
 async function notifyPaymentReceived(sock, order) {
   try {
     const waId = order.waNumber.endsWith("@s.whatsapp.net")
       ? order.waNumber
       : `${order.waNumber}@s.whatsapp.net`;
 
-    // Hitung estimasi proses dan selesai
-    const nominal = order.jumlah;
-    const estimasiProses = Math.ceil((nominal + nominal * 0.10) * 20); // 1M = 20 menit
+    const nominal = order.jumlah || 0;
+    let estimasiProses = 0;
+
+    switch (order.jenis) {
+      case "uang":
+        // 2.5 juta per jam = 24 menit per juta
+        estimasiProses = (nominal + (nominal * 1/10)) * 24;
+        break;
+      case "minigame":
+        // 100 point = 30 menit
+        estimasiProses = (nominal / 100) * 30;
+        break;
+      case "fishing":
+        // 7200 poin = 360 menit (6 jam)
+        estimasiProses = (nominal / 7200) * 360;
+        break;
+      default:
+        estimasiProses = Math.ceil((nominal + nominal * 0.10) * 24);
+        break;
+    }
+
+    estimasiProses = Math.ceil(estimasiProses);
+
     const estimasiSelesai = new Date(Date.now() + estimasiProses * 60000)
       .toLocaleString('id-ID', { timeZone: 'Asia/Jakarta' });
 
+    const jenisLabel = {
+      uang: "Uang",
+      minigame: "Minigame",
+      fishing: "Fishing"
+    }[order.jenis] || "Joki";
 
-    const message = `✅ *Pembayaran untuk Order ${order.orderId} sudah diterima!*\n\n` +
-      `Halo kak, joki sudah mulai diproses ya kak 🙏\n` +
-      `📦 Jumlah: *${order.jumlah}${order.jenis === "minigame" ? "P" : "M"}*\n` +
+    const satuan = {
+      uang: "M",
+      minigame: "P",
+      fishing: "CAIL"
+    }[order.jenis] || "";
+
+    let message = `✅ *Pembayaran untuk Order ${order.orderId} sudah diterima!*\n\n` +
+      `Halo kak, joki *${jenisLabel}* sudah mulai diproses ya kak 🙏\n` +
+      `📦 Jumlah: *${order.jumlah}${satuan}*\n` +
       `💳 Total: *Rp${order.totalHarga.toLocaleString()}*\n\n` +
       `🧭 Estimasi proses: *${formatEstimasi(estimasiProses)}*\n` +
       `🚗 Estimasi selesai: *${estimasiSelesai}*\n\n` +
-      `Selama proses berlangsung *mohon jangan ditabrak/dimainkan dulu akunnya* agar tidak mengganggu proses 🙏\n\n` +
-      `*Estimasi tersebut sudah termasuk bonus uangnya juga ya kak 💸*\n\n` +
-      `Mohon ditunggu dan *terima kasih atas kepercayaannya* 😊`;
+      `Selama proses berlangsung *mohon jangan ditabrak/dimainkan dulu akunnya* agar tidak mengganggu proses 🙏\n\n`;
+
+    if (order.jenis === "uang") {
+      message += `*Estimasi tersebut sudah termasuk bonus uangnya juga ya kak 💸*\n\n`;
+    }
+
+    message += `Mohon ditunggu dan *terima kasih atas kepercayaannya* 😊`;
 
     console.log("📤 Kirim WA ke:", waId);
     console.log("📨 Pesan:", message);
@@ -61,7 +95,6 @@ async function notifyPaymentReceived(sock, order) {
     console.error("❌ Gagal kirim notifikasi pembayaran:", e);
   }
 }
-
 
 module.exports = {
   notifyCustomer,

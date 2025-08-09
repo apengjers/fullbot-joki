@@ -7,7 +7,7 @@ const {sendOrderToDiscord} = require("../discord/discordBot");
 
 const cooldownMap = new Map();
 const hargaNormal = 1000;
-const hargaDiskon = 750;
+const hargaDiskon = 700;
 const hargaNormalMG = 100;
 const hargaDiskonMG = 80;
 const hargaNormalFishing = 1000/100;
@@ -551,7 +551,7 @@ _Ketik 0 untuk batal dan kembali ke menu_`,
       const hargaPerM = nominal >= 100 ? hargaDiskon : hargaNormal;
       const totalHarga = nominal * hargaPerM;
 
-      const estimasiProses = Math.ceil((nominal + nominal * 0.10) * 20);
+      const estimasiProses = Math.ceil((nominal + nominal * 0.10) * 24);
       const selesai = new Date(Date.now() + estimasiProses * 60000)
         .toLocaleString('id-ID', { timeZone: 'Asia/Jakarta' });
 
@@ -666,15 +666,16 @@ _Ketik 0 untuk batal dan kembali ke menu_`,
                     `*🤑 Estimasi Cashback : ${totalCashback.toFixed(2)}M*\n\n`;
       
       for (const o of orders) {
-        const satuan = o.jenis === "minigame" ? "P" : (o.jenis || "uang") === "uang" ? "M" : "M";
+        const satuan = o.jenis === "minigame" ? "P" : o.jenis === "fishing" ? "CAIL" : "M";
         msgText += `🆔 *${o.orderId}*\n👤 Username: ${o.username || "-"}\n💰 ${o.jumlah}${satuan} | Rp${o.totalHarga?.toLocaleString() || 0}\n📌 Status: *${o.status}*\n\n`;
       }
 
       msgText += `Chat admin untuk klaim cashback pada tanggal 01 setiap bulannya
-_Ketik 0 untuk kembali ke menu utama._`;
+    _Ketik 0 untuk kembali ke menu utama._`;
 
       return await sock.sendMessage(sender, { text: msgText });
     }
+
 
     if (text === "3" || text.includes("etimasi")) {
       setSession(sender, { state: "hitung_estimasi" });

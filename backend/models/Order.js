@@ -16,16 +16,16 @@ const orderSchema = new mongoose.Schema({
   worker: { type: String, default: "" },
   discordMessageId: String,
   discordChannelId: String,
-  createdAt: { type: Date, default: Date.now },
+  awalDuit: String, // <-- pindahkan ke sini
   jenis: {
-  type: String,
-  enum: ["uang", "minigame", "fishing"],
-  default: "uang" ,
-  awalDuit: { type: String },
-
-  }
+    type: String,
+    enum: ["uang", "minigame", "fishing"],
+    default: "uang"
+  },
+  createdAt: { type: Date, default: Date.now }
 }, {
-  timestamps: true // ✅ wajib biar bisa pakai .sort({ createdAt: -1 })
+  timestamps: true
 });
+
 
 module.exports = mongoose.model("Order", orderSchema);

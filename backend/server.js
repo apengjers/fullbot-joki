@@ -24,7 +24,7 @@ let sockGlobal = null;
 
 // ✅ Scheduler untuk hapus order kadaluarsa (menunggu_* > 20 menit)
 setInterval(async () => {
-  const batasWaktu = new Date(Date.now() - 20 * 60 * 1000); // 20 menit
+  const batasWaktu = new Date(Date.now() - 60 * 60 * 1000); // 20 menit
 
   const expiredStatuses = ["menunggu_pembayaran", "menunggu_password", "menunggu_username"];
 
